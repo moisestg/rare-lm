@@ -56,22 +56,22 @@ with graph.as_default():
 
 		# Tensors we want to evaluate
 		accuracies = graph.get_operation_by_name("stats/accuracy").outputs[0]
-		perplexities = graph.get_operation_by_name("stats/perplexity").outputs[0]
+		losses = graph.get_operation_by_name("softmax/loss").outputs[0]
 
 		# Generate batches for one epoch
 		batches = data_utils.batch_iter(list(zip(x_test, y_test)), FLAGS.batch_size, 1, shuffle=False)
 
 		# Collect the stats here
 		all_accuracies = []
-		all_perplexities = []
+		all_losses = []
 
 		for batch in batches:
 			x_batch, y_batch = zip(*batch)
-			batch_accuracy, batch_perplexity = sess.run([accuracies, perplexities], {input_x: x_batch, input_y: y_batch, dropout_keep_prob: 1.0})
+			batch_accuracy, batch_loss = sess.run([accuracies, losses], {input_x: x_batch, input_y: y_batch, dropout_keep_prob: 1.0})
 			all_accuracies = np.concatenate([all_accuracies, [batch_accuracy]])
-			all_perplexities = np.concatenate([all_perplexities, [batch_perplexity]])
+			all_losses = np.concatenate([all_losses, [batch_loss]])
 
 # Print evaluation stats
 print("Total number of test examples: {}".format(len(y_test)))
 print("Accuracy: {:g}".format(np.mean(all_accuracies)))
-print("Perplexity: {:g}".format(np.mean(all_perplexities)))
+print("Perplexity: {:g}".format(np.exp(np.mean(all_perplexities)))) # CORPUS-WISE PERPLEXITY (1st AVERAGE, 2nd EXP)

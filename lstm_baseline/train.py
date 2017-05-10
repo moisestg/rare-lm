@@ -125,7 +125,7 @@ with tf.Graph().as_default():
 			}
 
 			_, step, summaries, loss, accuracy, perplexity= sess.run(
-				[train_op, global_step, train_summary_op, model.loss, model.accuracy, model.perplexity],
+				[train_op, global_step, train_summary_op, model.loss, model.accuracy, model.perplexity], # BATCH-WISE PERPLEXITY
 				feed_dict)
 
 			time_str = datetime.datetime.now().isoformat()
@@ -147,18 +147,18 @@ with tf.Graph().as_default():
 				}
 
 				step, summaries, loss, accuracy, perplexity = sess.run(
-					[global_step, dev_summary_op, model.loss, model.accuracy, model.perplexity],
+					[global_step, dev_summary_op, model.loss, model.accuracy],
 					feed_dict)
 				batch_loss.append(loss)
 				batch_acc.append(accuracy)
-				batch_perp.append(perplexity)
+				#batch_perp.append(perplexity)
 			loss_value = tf.Summary.Value(tag="loss", simple_value=float(np.mean(batch_loss)))
 			acc_value = tf.Summary.Value(tag="acc", simple_value=float(np.mean(batch_acc)))
-			perp_value = tf.Summary.Value(tag="perplexity", simple_value=float(np.mean(batch_perp)))
+			perp_value = tf.Summary.Value(tag="perplexity", simple_value=float(np.exp(np.mean(batch_loss)))) # CORPUS-WISE PERPLEXITY (1st AVERAGE, 2nd EXP)
 			new_summ = tf.Summary()
 			new_summ.value.extend([loss_value, acc_value, perp_value])
 			dev_summary_writer.add_summary(new_summ, current_step)
-			print("Accuracy: "+str(np.mean(batch_acc))+" Loss: "+str(np.mean(batch_loss))+" Perplexity: "+str(np.mean(batch_perp)))
+			print("Accuracy: "+str(np.mean(batch_acc))+" Loss: "+str(np.mean(batch_loss))+" Perplexity: "+str(np.exp(np.mean(batch_loss))))
 			print("")
 
 		## TRAINING LOOP ##

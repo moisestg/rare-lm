@@ -23,13 +23,13 @@ class BasicLSTM(object):
 		with tf.device('/cpu:0'), tf.name_scope("embedding"):
 			self.W_emb = tf.get_variable("W_emb", [vocab_size, embedding_size], tf.float32, initializer=tf.random_uniform_initializer(-.1, .1))
 			self.embedded_words = tf.nn.embedding_lookup(self.W_emb, self.input_x) # [None, num_steps, embedding_size]
-			self.inputs = tf.nn.dropout(self.embedded_words, self.dropout_keep_prob) # IS THIS REALLY GOOD? Tensorflow tutorial
+			#self.inputs = tf.nn.dropout(self.embedded_words, self.dropout_keep_prob) # IS THIS REALLY GOOD? Tensorflow tutorial
 
 		# LSTM layer
 		with tf.name_scope("rnn"):
 			# TODO: Keep track of hidden state?? 
 			self.init_state = self.cell.zero_state(self.batch_size, dtype=tf.float32)
-			outputs, last_state = tf.nn.dynamic_rnn(cell=self.cell, inputs=self.inputs, initial_state=self.init_state, dtype=tf.float32) # outputs: [batch_size, num_steps, state_size]
+			outputs, last_state = tf.nn.dynamic_rnn(cell=self.cell, inputs=self.embedded_words, initial_state=self.init_state, dtype=tf.float32) # outputs: [batch_size, num_steps, state_size]
 			self.outputs = tf.reshape(outputs, [-1, state_size]) # 3D to 2D: [batch_size*num_steps, state_size]
 			#self.final_state = state
 
@@ -46,5 +46,5 @@ class BasicLSTM(object):
 		with tf.name_scope("stats"):
 			correct_predictions = tf.equal(self.predictions, tf.reshape(self.input_y, [-1]))
 			self.accuracy = tf.reduce_mean(tf.cast(correct_predictions, "float"), name="accuracy")
-			self.perplexity = tf.exp(self.loss, name="perplexity")
+			self.perplexity = tf.exp(self.loss, name="perplexity") # batch perplexity
 			
