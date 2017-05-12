@@ -11,7 +11,7 @@ from tqdm import tqdm
 ## PARAMETERS ##
 
 # Data loading parameters
-#tf.flags.DEFINE_float("dev_sample_percentage", .00005, "Percentage of the training data used for validation (default: 1%)")
+#tf.flags.DEFINE_float("dev_sample_percentage", .05, "Percentage of the training data used for validation (default: 5%)")
 tf.flags.DEFINE_string("train_path", "/home/moises/thesis/lambada/lambada-dataset/train-novels/", "Path to the training data")
 tf.flags.DEFINE_string("dev_path", "/home/moises/thesis/lambada/lambada-dataset/dev/", "Path to the dev data")
 # Model parameters
@@ -118,14 +118,17 @@ with tf.Graph().as_default():
 			"""
 			A single training step
 			"""
+			global state_train # save state for next batch
+
 			feed_dict = {
 				model.input_x: x_batch,
 				model.input_y: y_batch,
-				model.dropout_keep_prob: FLAGS.keep_prob
+				model.dropout_keep_prob: FLAGS.keep_prob,
+				model.init_state: state_train
 			}
 
-			_, step, summaries, loss, accuracy, perplexity= sess.run(
-				[train_op, global_step, train_summary_op, model.loss, model.accuracy, model.perplexity], # BATCH-WISE PERPLEXITY
+			_, step, summaries, loss, accuracy, perplexity, state_train = sess.run(
+				[train_op, global_step, train_summary_op, model.loss, model.accuracy, model.perplexity, model.final_state], # BATCH-WISE PERPLEXITY
 				feed_dict)
 
 			time_str = datetime.datetime.now().isoformat()
@@ -136,18 +139,21 @@ with tf.Graph().as_default():
 			"""
 			Evaluates model on the whole dev set
 			"""
+			state_dev = np.zeros((FLAGS.num_layers, 2, FLAGS.batch_size, FLAGS.state_size))
 			batch_loss, batch_acc, batch_perp = [], [], []
 			batches = data_utils.batch_iter(list(zip(x_dev, y_dev)), FLAGS.batch_size, 1, shuffle=False) 
 			for batch in batches:
+				#print(state_dev)
 				x_batch, y_batch = zip(*batch)
 				feed_dict = {
 					model.input_x: x_batch,
 					model.input_y: y_batch,
-					model.dropout_keep_prob: 1.0
+					model.dropout_keep_prob: 1.0,
+					model.init_state: state_dev
 				}
 
-				step, summaries, loss, accuracy, perplexity = sess.run(
-					[global_step, dev_summary_op, model.loss, model.accuracy],
+				step, summaries, loss, accuracy, state_dev = sess.run(
+					[global_step, dev_summary_op, model.loss, model.accuracy, model.final_state],
 					feed_dict)
 				batch_loss.append(loss)
 				batch_acc.append(accuracy)
@@ -162,6 +168,7 @@ with tf.Graph().as_default():
 			print("")
 
 		## TRAINING LOOP ##
+		state_train = np.zeros((FLAGS.num_layers, 2, FLAGS.batch_size, FLAGS.state_size)) # initial state
 		for batch in tqdm(batches, total = (int((len(x_train)-1)/FLAGS.batch_size) + 1)*FLAGS.num_epochs, initial=1):
 			x_batch, y_batch = zip(*batch)
 			train_step(x_batch, y_batch)

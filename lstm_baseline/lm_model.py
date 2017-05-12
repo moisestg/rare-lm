@@ -8,11 +8,14 @@ class BasicLSTM(object):
 
 	def __init__(self, vocab_size, embedding_size, num_steps, state_size, num_layers): # sequence_length, filter_sizes, num_filters, l2_reg_lambda=0.0
 		
-		# Placeholders for inputs and dropout probability
+		# Placeholders for inputs , initial hidden state for the batch and dropout probability
 		self.input_x = tf.placeholder(tf.int32, [None, num_steps], name="input_x") # tf.int64?? 
 		self.input_y = tf.placeholder(tf.int64, [None, num_steps], name="input_y") # list containing id of the output word
-		self.dropout_keep_prob = tf.placeholder(tf.float32, name="dropout_keep_prob")
 		self.batch_size = tf.shape(self.input_x)[0]
+		self.init_state = tf.placeholder(tf.float32, [num_layers, 2, None, state_size], name="init_state")
+		l = tf.unstack(self.init_state, axis=0)
+		init_state_tuple = tuple( [tf.contrib.rnn.LSTMStateTuple(l[idx][0], l[idx][1]) for idx in range(num_layers)] )
+		self.dropout_keep_prob = tf.placeholder(tf.float32, name="dropout_keep_prob")
 
 		# Cell definition
 		self.cell = tf.contrib.rnn.BasicLSTMCell(state_size) # , initializer=tf.contrib.layers.xavier_initializer() in tf.nn.rnn_cell in previous versions !
@@ -21,17 +24,17 @@ class BasicLSTM(object):
 
 		# Embedding layer
 		with tf.device('/cpu:0'), tf.name_scope("embedding"):
-			self.W_emb = tf.get_variable("W_emb", [vocab_size, embedding_size], tf.float32, initializer=tf.random_uniform_initializer(-.1, .1))
+			self.W_emb = tf.get_variable("W_emb", [vocab_size, embedding_size], tf.float32, initializer=tf.random_uniform_initializer(-.05, .05))
 			self.embedded_words = tf.nn.embedding_lookup(self.W_emb, self.input_x) # [None, num_steps, embedding_size]
 			#self.inputs = tf.nn.dropout(self.embedded_words, self.dropout_keep_prob) # IS THIS REALLY GOOD? Tensorflow tutorial
 
 		# LSTM layer
 		with tf.name_scope("rnn"):
 			# TODO: Keep track of hidden state?? 
-			self.init_state = self.cell.zero_state(self.batch_size, dtype=tf.float32)
-			outputs, last_state = tf.nn.dynamic_rnn(cell=self.cell, inputs=self.embedded_words, initial_state=self.init_state, dtype=tf.float32) # outputs: [batch_size, num_steps, state_size]
+			#self.init_state = self.cell.zero_state(self.batch_size, dtype=tf.float32)
+			outputs, last_state = tf.nn.dynamic_rnn(cell=self.cell, inputs=self.embedded_words, initial_state=init_state_tuple, dtype=tf.float32) # outputs: [batch_size, num_steps, state_size]
 			self.outputs = tf.reshape(outputs, [-1, state_size]) # 3D to 2D: [batch_size*num_steps, state_size]
-			#self.final_state = state
+			self.final_state = last_state
 
 		# Soft-max layer
 		with tf.name_scope("softmax"):
