@@ -50,57 +50,96 @@ Loads data and returns the respective ids for words
 """
 def load_data(dataset="train", num_steps=20, max_vocab_size=10000, data_path=None, word2Id=None):
 	cwd = os.getcwd()
-	file_x = cwd+"/preprocessed/x_"+dataset+"_vocSize"+str(max_vocab_size)+"_steps"+str(num_steps)+".pkl"
-	file_y = cwd+"/preprocessed/y_"+dataset+"_vocSize"+str(max_vocab_size)+"_steps"+str(num_steps)+".pkl"
+	file_name = cwd+"/preprocessed/x_"+dataset+"_vocSize"+str(max_vocab_size)+"_steps"+str(num_steps)+".pkl"
+	#file_y = cwd+"/preprocessed/y_"+dataset+"_vocSize"+str(max_vocab_size)+"_steps"+str(num_steps)+".pkl"
 	# If files exist, load them
-	if os.path.exists(file_x) and os.path.exists(file_y):
-		with open(file_x, "rb") as f:
-			x = pickle.load(f)
-		with open(file_y, "rb") as f:
-			y = pickle.load(f)
-		return [x, y]
+	if os.path.exists(file_name):
+		with open(file_name, "rb") as f:
+			data = pickle.load(f)
+		return data
 	# If not, construct training data
 	else: 
-		x = []
+		data = []
 		for dir_path,_,files in os.walk(data_path):
 			for file_name in files:
 				with open(os.path.join(dir_path, file_name), "r") as sentences:
 					for sentence in sentences:
 						for word in tokenizer(sentence.replace("\n", _EOS)):
-							x.append(word2Id[word] if word in word2Id else word2Id[_UNK])
-		# Generate training data points of lenght "num_steps"
-		n = len(x) % num_steps
-		if n == 0:
-			x = x[:-(num_steps-1)]
-		else:
-			x = x[:(1-n)]
-		y = np.array( [x[i:i + num_steps] for i in range(1, len(x), num_steps)] )
-		x = np.array( [x[i:i + num_steps] for i in range(0, len(x)-1, num_steps)] )
-
+							data.append(word2Id[word] if word in word2Id else word2Id[_UNK])
+		data = np.array(data)
 		if not os.path.exists(cwd+"/preprocessed"):
 			os.makedirs(cwd+"/preprocessed")
-		with open(file_x, "wb") as f:
-			pickle.dump(x, f)
-		with open(file_y, "wb") as f:
-			pickle.dump(y, f)
-		return [x, y]
+		with open(file_name, "wb") as f:
+			pickle.dump(data, f)
+		return data
 
+
+def batch_iterator(raw_data, batch_size, num_steps, num_epochs):
+	data_len = len(raw_data)
+	num_batches = data_len // batch_size
+	data = np.reshape(raw_data[0 : batch_size * num_batches], [batch_size, num_batches])
+	epoch_size = (num_batches - 1) // num_steps
+
+	for i in list(range(0, epoch_size))*num_epochs:
+		x_batch = data[:, i*num_steps:(i+1)*num_steps]
+		y_batch = data[:, i*num_steps+1:(i+1)*num_steps+1]
+		yield [x_batch, y_batch]
+
+
+# def batch_producer(raw_data, batch_size, num_steps, name=None):
+# 	"""Iterate on the raw PTB data.
+# 	This chunks up raw_data into batches of examples and returns Tensors that
+# 	are drawn from these batches.
+# 	Args:
+# 		raw_data: one of the raw data outputs from ptb_raw_data.
+# 		batch_size: int, the batch size.
+# 		num_steps: int, the number of unrolls.
+# 		name: the name of this operation (optional).
+# 	Returns:
+# 		A pair of Tensors, each shaped [batch_size, num_steps]. The second element
+# 		of the tuple is the same data time-shifted to the right by one.
+# 	Raises:
+# 		tf.errors.InvalidArgumentError: if batch_size or num_steps are too high.
+# 	"""
+# 	with tf.name_scope(name, "batchProducer", [raw_data, batch_size, num_steps]):
+# 		raw_data = tf.convert_to_tensor(raw_data, name="raw_data", dtype=tf.int32)
+
+# 		data_len = tf.size(raw_data)
+# 		batch_len = data_len // batch_size
+# 		data = tf.reshape(raw_data[0 : batch_size * batch_len],
+# 											[batch_size, batch_len])
+
+# 		epoch_size = (batch_len - 1) // num_steps
+# 		assertion = tf.assert_positive(
+# 				epoch_size,
+# 				message="epoch_size == 0, decrease batch_size or num_steps")
+# 		with tf.control_dependencies([assertion]):
+# 			epoch_size = tf.identity(epoch_size, name="epoch_size")
+
+# 		i = tf.train.range_input_producer(epoch_size, shuffle=False).dequeue()
+# 		x = tf.strided_slice(data, [0, i * num_steps],
+# 												 [batch_size, (i + 1) * num_steps])
+# 		x.set_shape([batch_size, num_steps])
+# 		y = tf.strided_slice(data, [0, i * num_steps + 1],
+# 												 [batch_size, (i + 1) * num_steps + 1])
+# 		y.set_shape([batch_size, num_steps])
+# 		return x, y
 
 """
 Generates a batch iterator for a dataset
 """
-def batch_iter(data, batch_size, num_epochs, shuffle=True):
-	data = np.array(data)
-	data_size = len(data)
-	num_batches_per_epoch = int((len(data)-1)/batch_size) + 1
-	for epoch in range(num_epochs):
-		# Shuffle the data at each epoch
-		if shuffle:
-			shuffle_indices = np.random.permutation(np.arange(data_size))
-			shuffled_data = data[shuffle_indices]
-		else:
-			shuffled_data = data
-		for batch_num in range(num_batches_per_epoch-1): # TODO: Fix last batch (remove -1)
-			start_index = batch_num * batch_size
-			end_index = min((batch_num + 1) * batch_size, data_size)
-			yield shuffled_data[start_index:end_index]
+# def batch_iter(data, batch_size, num_epochs, shuffle=True):
+# 	data = np.array(data)
+# 	data_size = len(data)
+# 	num_batches_per_epoch = int((len(data)-1)/batch_size) + 1
+# 	for epoch in range(num_epochs):
+# 		# Shuffle the data at each epoch
+# 		if shuffle:
+# 			shuffle_indices = np.random.permutation(np.arange(data_size))
+# 			shuffled_data = data[shuffle_indices]
+# 		else:
+# 			shuffled_data = data
+# 		for batch_num in range(num_batches_per_epoch-1): # TODO: Fix last batch (remove -1)
+# 			start_index = batch_num * batch_size
+# 			end_index = min((batch_num + 1) * batch_size, data_size)
+# 			yield shuffled_data[start_index:end_index]

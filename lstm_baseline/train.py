@@ -46,11 +46,8 @@ print("")
 # Load train & dev data
 print("Loading and preprocessing training and dev datasets... \n")
 word2Id = data_utils.load_vocabulary(FLAGS.train_path, FLAGS.vocab_size)
-x_train, y_train = data_utils.load_data("train", FLAGS.num_steps, FLAGS.vocab_size, FLAGS.train_path, word2Id)
-x_dev, y_dev = data_utils.load_data("dev", FLAGS.num_steps, FLAGS.vocab_size, FLAGS.dev_path, word2Id)
-
-# Generate training batches
-batches = data_utils.batch_iter(list(zip(x_train, y_train)), FLAGS.batch_size, FLAGS.num_epochs, shuffle=False)
+train_data = data_utils.load_data("train", FLAGS.num_steps, FLAGS.vocab_size, FLAGS.train_path, word2Id)
+dev_data = data_utils.load_data("dev", FLAGS.num_steps, FLAGS.vocab_size, FLAGS.dev_path, word2Id)
 print("Done! \n")
 
 ## MODEL AND TRAINING PROCEDURE DEFINITION ##
@@ -135,16 +132,14 @@ with tf.Graph().as_default():
 			print("\n{}: step {}, loss {:g}, acc {:g}, perp {:g}".format(time_str, step, loss, accuracy, perplexity))
 			train_summary_writer.add_summary(summaries, step)
 
-		def dev_step(x_dev, y_dev, current_step):
+		def dev_step(current_step):
 			"""
 			Evaluates model on the whole dev set
 			"""
 			state_dev = np.zeros((FLAGS.num_layers, 2, FLAGS.batch_size, FLAGS.state_size))
 			batch_loss, batch_acc, batch_perp = [], [], []
-			batches = data_utils.batch_iter(list(zip(x_dev, y_dev)), FLAGS.batch_size, 1, shuffle=False) 
-			for batch in batches:
-				#print(state_dev)
-				x_batch, y_batch = zip(*batch)
+			dev_batches = data_utils.batch_iterator(dev_data, FLAGS.batch_size, FLAGS.num_steps, 1)
+			for x_batch, y_batch in dev_batches:
 				feed_dict = {
 					model.input_x: x_batch,
 					model.input_y: y_batch,
@@ -168,14 +163,14 @@ with tf.Graph().as_default():
 			print("")
 
 		## TRAINING LOOP ##
+		train_batches = data_utils.batch_iterator(train_data, FLAGS.batch_size, FLAGS.num_steps, FLAGS.num_epochs)
 		state_train = np.zeros((FLAGS.num_layers, 2, FLAGS.batch_size, FLAGS.state_size)) # initial state
-		for batch in tqdm(batches, total = (int((len(x_train)-1)/FLAGS.batch_size) + 1)*FLAGS.num_epochs, initial=1):
-			x_batch, y_batch = zip(*batch)
+		for x_batch, y_batch in tqdm(train_batches, total = ( ((len(train_data)//FLAGS.batch_size)-1)//FLAGS.num_steps )*FLAGS.num_epochs, initial=1):
 			train_step(x_batch, y_batch)
 			current_step = tf.train.global_step(sess, global_step)
 			if current_step % FLAGS.evaluate_every == 0:
 				print("\nEvaluation:")
-				dev_step(x_dev, y_dev, current_step)
+				dev_step(current_step)
 				print("")
 			if current_step % FLAGS.checkpoint_every == 0:
 				path = saver.save(sess, checkpoint_prefix, global_step=current_step)
