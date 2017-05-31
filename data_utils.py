@@ -1,0 +1,356 @@
+import collections
+import os
+
+import tensorflow as tf
+import numpy as np
+import gensim
+import pickle
+
+import itertools
+
+
+_EOS = "<eos>"
+_UNK = "<unk>"
+_PAD = "<pad>"
+
+
+## MISC ##
+
+def softmax(x):
+	"""Compute softmax values for each sets of scores in x."""
+	e_x = np.exp(x - np.max(x))
+	return e_x / e_x.sum()
+
+
+## GENERAL (DATA LOADING) ##
+
+def get_vocab(train_path, vocab_size, tokenizer, use_unk=True):
+	# Load if already exists
+	pickle_path = os.path.split(train_path)[0]+"/preprocessed/dicts_vocSize"+str(vocab_size)+".pkl"
+	if os.path.exists(pickle_path):
+		with open(pickle_path, "rb") as f:
+			return pickle.load(f)
+
+	# Generate vocabulary
+	word_counts = collections.Counter()
+	with open(train_path, "r", encoding="utf-8") as f:
+		for line in f:
+			for word in tokenizer(line):
+				if word in word_counts: 
+					word_counts[word] += 1
+				else:
+					word_counts[word] = 1
+
+	if use_unk:
+		vocabulary = [tupl[0] for tupl in word_counts.most_common(vocab_size-2)]   
+		word2id = {word: i for i, word in enumerate(vocabulary,2)}
+		word2id[_PAD] = 0
+		word2id[_UNK] = 1
+	else:
+		vocabulary = [tupl[0] for tupl in word_counts.most_common(vocab_size-1)]  
+		word2id = {word: i for i, word in enumerate(vocabulary,1)}
+		word2id[_PAD] = 0
+
+	total_freq = sum(freq for freq in word_counts.values())
+	kept_freq = sum(tupl[1] for tupl in word_counts.most_common(vocab_size)) # tupl -> (word, frequency)
+	print("\n\n** Vocabulary of size "+str(vocab_size)+" covers "+str(round(kept_freq/total_freq*100, 2))+"% of the training words. **\n\n")
+
+	# Generate id2word
+	id2word = {v: k for k,v in word2id.items()}
+	
+	output_dir = os.path.split(train_path)[0]+"/preprocessed/"
+	if not os.path.exists(output_dir):
+		os.makedirs(output_dir)
+	with open(pickle_path, "wb") as f:
+		pickle.dump([word2id, id2word], f)
+
+	return [word2id, id2word]
+
+
+def get_word_ids(data_path, word2id, tokenizer):
+	# Load if already exists
+	pickle_path = os.path.split(data_path)[0]+"/preprocessed/"+os.path.split(data_path)[1]+"_vocSize"+str(len(word2id))+".pkl"
+	if os.path.exists(pickle_path):
+		with open(pickle_path, "rb") as f:
+			return pickle.load(f)
+
+	data = []
+	with open(data_path, "r", encoding="utf-8") as f:
+		for line in f:
+			for word in tokenizer(line):
+			#for word in tokenizer(line.replace("\n", _EOS)):
+				data.append(word2id[word] if word in word2id else word2id[_UNK])
+
+	output_dir = os.path.split(data_path)[0]+"/preprocessed/"
+	if not os.path.exists(output_dir):
+		os.makedirs(output_dir)
+	with open(pickle_path, "wb") as f:
+		pickle.dump(data, f)
+
+	return data
+
+
+def get_word_ids_padded(data_path, word2id, tokenizer):
+	with open(data_path, "r", encoding="utf-8") as f:
+		test_examples = f.readlines()
+
+	test_examples = [tokenizer(example) for example in test_examples]
+	max_seq_length = len(max(test_examples, key=len))
+
+	data = []
+	for example in test_examples:
+		for word in example:
+			data.append(word2id[word] if word in word2id else word2id[_UNK])
+		for _ in range(max_seq_length-len(example)+1): # one extra pad, for the y
+			data.append(word2id[_PAD])
+
+	return data, max_seq_length
+
+
+def input_generator(raw_data, batch_size, num_steps):
+	data_len = len(raw_data)
+	batch_len = data_len // batch_size
+	raw_data = np.array(raw_data, dtype=np.int32)
+	data = np.reshape(raw_data[0 : batch_size * batch_len], [batch_size, batch_len])
+	epoch_size = (batch_len - 1) // num_steps
+	for i in itertools.cycle(range(epoch_size)):
+		x_batch = data[:, i*num_steps:(i+1)*num_steps]
+		y_batch = data[:, i*num_steps+1:(i+1)*num_steps+1]
+		yield x_batch, y_batch
+
+
+def input_generator_continuous(raw_data, batch_size, num_steps):
+	data_len = len(raw_data)
+	batch_len = data_len // batch_size
+	raw_data = np.array(raw_data, dtype=np.int32)
+	data = np.reshape(raw_data[0 : batch_size * batch_len], [batch_size, batch_len])
+	epoch_size = batch_len  // (num_steps+1)
+	for i in itertools.cycle(range(epoch_size)):
+		slice_xy = data[:, i*(num_steps+1):(i+1)*(num_steps+1)]
+		x_batch = slice_xy[:, 0:num_steps]
+		y_batch = slice_xy[:, 1:num_steps+1]
+		yield x_batch, y_batch
+
+
+class InputGenerator(object):
+	"""The input data."""
+	def __init__(self, config, data, input_generator):
+		self.batch_size = batch_size = config.batch_size
+		self.num_steps = num_steps = config.num_steps
+		self.epoch_size = ((len(data) // batch_size) - 1) // num_steps
+		self.generator = input_generator(data, batch_size, num_steps)
+
+	def get_batch(self):
+		return next(self.generator)
+
+## EVAL FUNCTIONS
+
+def eval_epoch(session, model, input_data, summary_writer=None):
+	costs = 0.0
+	iters = 0
+	accuracies = []
+	state = session.run(model.initial_state)
+
+	fetches = {
+			"cost": model.cost,
+			"final_state": model.final_state,
+			"accuracy": model.accuracy,
+	}
+
+	for step in range(input_data.epoch_size):
+		input_x, input_y = input_data.get_batch()
+		feed_dict = {
+			model.input_x : input_x,
+			model.input_y : input_y
+		}
+		for i, (c, h) in enumerate(model.initial_state):
+			feed_dict[c] = state[i].c
+			feed_dict[h] = state[i].h
+		
+		results = session.run(fetches, feed_dict)
+		cost = results["cost"]
+		state = results["final_state"]
+		accuracy = results["accuracy"]
+
+		costs += cost
+		accuracies.append(accuracy)
+		iters += input_data.num_steps
+	
+	perplexity = np.exp(costs / iters)
+	accuracy = np.mean(accuracies)
+
+	if summary_writer is not None:
+		self.write_summary(summary_writer, tf.contrib.framework.get_or_create_global_step().eval(session), {"perplexity": perplexity, "accuracy": accuracy}) # Write summary (CORPUS-WISE stats)	
+
+	return [perplexity , accuracy]
+
+def eval_last_word(session, model, input_data, summary_writer=None):
+	losses = []
+
+	state = session.run(model.initial_state)
+
+	fetches = {
+			"loss": model.loss,
+	}
+
+	for step in range(input_data.epoch_size):
+		input_x, input_y = input_data.get_batch()
+		feed_dict = {
+			model.input_x : input_x,
+			model.input_y : input_y
+		}
+		results = session.run(fetches, feed_dict)
+		loss = results["loss"]
+		
+		not_pad = [elem != 0 for elem in input_x[0]] # not pad
+
+		loss_index = max(loc for loc, val in enumerate(not_pad) if val == True) - 1 # previous word
+		losses.append(loss[loss_index])
+
+	perplexity = np.exp(np.mean(losses))
+	accuracy = 0.0 # TODO: Calculate accuracy
+
+	if summary_writer is not None:
+		self.write_summary(summary_writer, tf.contrib.framework.get_or_create_global_step().eval(session), {"perplexity": perplexity, "accuracy": accuracy}) # Write summary (CORPUS-WISE stats)
+
+	return [perplexity, accuracy] 
+
+## LAMBADA DATASET
+
+class LambadaDataset(object):
+
+	def tokenizer(self, line):
+		return line.strip().split(" ")
+
+	def get_vocab(self, train_path, vocab_size):
+		return get_vocab(train_path, vocab_size, self.tokenizer, use_unk=True)
+
+	def get_train_data(self, data_path, word2id): # get_train_data() ??
+		return get_word_ids(data_path, word2id, self.tokenizer)
+
+	def get_dev_data(self, data_path, word2id):
+		return get_word_ids_padded(data_path, word2id, self.tokenizer)
+
+	def get_train_batch_generator(self, config, data):
+		return InputGenerator(config, data, input_generator)
+
+	def get_dev_batch_generator(self, config, data):
+		return InputGenerator(config, data, input_generator_continuous)
+
+	def eval_dev(self, session, model, input_data, summary_writer=None):
+		return eval_last_word(session, model, input_data, summary_writer=None)
+
+	#def eval_test(self, session, model, input_data, summary_writer=None):
+
+	def write_summary(self, summary_writer, current_step, values):
+		list_values = []
+		for key, value in values.items():
+			list_values.append(tf.Summary.Value(tag=key, simple_value=value)) # TODO: Support other types of values (e.g. histogram)
+
+		new_summ = tf.Summary()
+		new_summ.value.extend(list_values)
+		summary_writer.add_summary(new_summ, current_step)
+
+
+
+# PENN TREE BANK DATASET
+# TODO: test / train wrappers for methods as in LAMBADA
+class PTBDataset(object):
+
+	def tokenizer(self, line):
+		return line.replace("\n", _EOS).strip().split(" ")
+
+	def get_vocab(self, train_path, vocab_size):
+		return get_vocab(train_path, vocab_size, self.tokenizer, use_unk=False)
+
+	def get_word_ids(self, data_path, word2id):
+		return get_word_ids(data_path, word2id, self.tokenizer)
+
+	def get_batch_generator(self, config, data):
+		return InputGenerator(config, data, input_generator=input_generator)
+
+	def write_summary(self, summary_writer, current_step, values):
+		list_values = []
+		for key, value in values.items():
+			list_values.append(tf.Summary.Value(tag=key, simple_value=value)) # TODO: Support other types of values (e.g. histogram)
+
+		new_summ = tf.Summary()
+		new_summ.value.extend(list_values)
+		summary_writer.add_summary(new_summ, current_step)
+
+	def eval_dev(self, session, model, input_data, summary_writer=None):
+		return eval_epoch(session, model, input_data, summary_writer=None)
+
+	def eval_test(self, session, model, input_data, summary_writer=None):
+		return eval_epoch(session, model, input_data, summary_writer=None)
+
+## WORD EMBEDDINGS ##
+
+def get_word2vec(train_path, vector_dim, word2id):
+	# Load if already exists
+	pickle_path = os.path.split(train_path)[0]+"/preprocessed/word2vec_dim"+str(vector_dim)+"_vocSize"+str(len(word2id))+".pkl"
+	if os.path.exists(pickle_path):
+		with open(pickle_path, "rb") as f:
+			return pickle.load(f)
+
+	print("Training word2vec...")
+	# Train sentences generator
+	class Sentence_generator(object):
+		def __init__(self, train_path):
+			self.train_path = train_path
+		
+		def __iter__(self):
+			for line in open(self.train_path, "r", encoding="utf-8"):
+				yield tokenizer(line)
+	# TODO: Include EOS ??
+	sentence_iterator = Sentence_generator(train_path)
+	model = gensim.models.Word2Vec(sentence_iterator, size=vector_dim)
+
+	vectors = np.empty([len(word2id), vector_dim], dtype='float32')
+	for word in word2id.keys():
+		# CHECK IF WORD EXISTS
+		if word in model.wv:
+			vectors[word2id[word],:] = model.wv[word]
+		else:
+			vectors[word2id[word],:] = np.random.randn(vector_dim)
+
+	output_dir = os.path.split(train_path)[0]+"/preprocessed/"
+	if not os.path.exists(output_dir):
+		os.makedirs(output_dir)
+	with open(pickle_path, "wb") as f:
+		pickle.dump(vectors, f)
+
+	return vectors
+
+
+## LAMBADA
+
+
+
+
+
+
+
+	# with tf.name_scope(name, "input_iterator", [raw_data, batch_size, num_steps]):
+	# 	raw_data = tf.convert_to_tensor(raw_data, name="raw_data", dtype=tf.int32)
+
+	# 	data_len = tf.size(raw_data)
+	# 	batch_len = data_len // batch_size
+	# 	data = tf.reshape(raw_data[0 : batch_size * batch_len],
+	# 										[batch_size, batch_len])
+
+	# 	epoch_size = batch_len  // (num_steps+1)
+	# 	assertion = tf.assert_positive(
+	# 			epoch_size,
+	# 			message="epoch_size == 0, decrease batch_size or num_steps")
+	# 	with tf.control_dependencies([assertion]):
+	# 		epoch_size = tf.identity(epoch_size, name="epoch_size")
+
+	# 	i = tf.train.range_input_producer(epoch_size, shuffle=False).dequeue()
+	# 	slice_xy = tf.strided_slice(data, [0, i * (num_steps+1)],
+	# 											 [batch_size, (i + 1) * (num_steps+1)])
+	# 	x = tf.strided_slice(slice_xy, [0, 0], [batch_size, num_steps])
+	# 	y = tf.strided_slice(slice_xy, [0, 1], [batch_size, num_steps+1])
+	# 	x.set_shape([batch_size, num_steps])
+	# 	y.set_shape([batch_size, num_steps])
+	# 	return x, y
