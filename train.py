@@ -25,15 +25,15 @@ tf.flags.DEFINE_integer("hidden_size", 200, "Size of the hidden & cell state")
 tf.flags.DEFINE_integer("num_steps", 20, "Number of unrolled steps for BPTT")
 tf.flags.DEFINE_string("optimizer", "grad_desc", "Optimizer used to calculate the gradients")
 tf.flags.DEFINE_float("learning_rate", 1.0, "Learning rate of the optimizer")
-tf.flags.DEFINE_float("learning_rate_decay", 0.5, "Decay (per epoch) of the learning rate")
+tf.flags.DEFINE_float("learning_rate_decay", None, "Decay (per epoch) of the learning rate") # 0.5
 tf.flags.DEFINE_float("keep_prob", 1.0, "Dropout output keep probability")
 tf.flags.DEFINE_float("clip_norm", 5.0, "Norm value to clip the gradients")
 
 # Training parameters
-tf.flags.DEFINE_integer("batch_size", 20, "Batch size")
+tf.flags.DEFINE_integer("batch_size", 128, "Batch size") 
 tf.flags.DEFINE_integer("num_epochs", 13, "Number of training epochs")
 tf.flags.DEFINE_integer("evaluate_every", 1000, "Evaluate model on dev set after this many steps")
-tf.flags.DEFINE_integer("checkpoint_every", 5000, "Save model after this many steps ")
+tf.flags.DEFINE_integer("checkpoint_every", 1000, "Save model after this many steps ")
 tf.flags.DEFINE_integer("num_checkpoints", 5, "Number of checkpoints to store (default: 5)")
 tf.flags.DEFINE_string("restore_path", None, "Path to the model to resume the training (default: None)")
 
@@ -72,12 +72,12 @@ with tf.Graph().as_default():
 	with tf.variable_scope("model", reuse=None, initializer=initializer):
 		model_train = MultilayerLSTM(is_training=True, config=FLAGS, pretrained_emb=pretrained_emb)
 
-	FLAGS.num_steps = max_len # TODO: Change this
-	FLAGS.batch_size = 1
+	FLAGS.batch_size = 1 # Necessary for graph construction
+	print("MAX LEN: "+str(max_len))
+	FLAGS.num_steps = max_len
 	valid_input = dataset.get_dev_batch_generator(config=FLAGS, data=valid_data)
 	with tf.variable_scope("model", reuse=True, initializer=initializer):
 		model_valid = MultilayerLSTM(is_training=False, config=FLAGS, pretrained_emb=pretrained_emb)
-
 
 	# Define saver to checkpoint the model
 	out_path = FLAGS.save_path + str(int(time.time()))
@@ -158,12 +158,12 @@ with tf.Graph().as_default():
 
 				# Write summary 
 				if step % 1000 == 0: # (model_train.input.epoch_size // 10) == 10
-					dataset.write_summary(train_summary_writer, current_step, {"perplexity": perplexity, "accuracy": accuracy})
+					data_utils.write_summary(train_summary_writer, current_step, {"perplexity": perplexity, "accuracy": accuracy})
 
 				# Eval on dev set
 				if current_step % FLAGS.evaluate_every == 0:
 					valid_perp, valid_acc = dataset.eval_dev(session, model_valid, valid_input, dev_summary_writer)
-					print("\n** Step: %i: Valid Perplexity: %.3f **\n" % (current_step, valid_perp))
+					print("\n** Step: %i: Valid Perplexity: %.3f,  Valid Accuracy: %.3f**\n" % (current_step, valid_perp, valid_acc))
 
 				# Checkpoint model
 				if current_step % FLAGS.checkpoint_every == 0:

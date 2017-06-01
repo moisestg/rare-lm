@@ -67,7 +67,7 @@ class MultilayerLSTM(object):
 
 		## STATS ##
 		predictions = tf.to_int32(tf.argmax(logits, 1, name="predictions")) # tf.argmax returns int64
-		correct_predictions = tf.equal(predictions, tf.reshape(self.input_y, [-1]))
+		self.correct_predictions = correct_predictions = tf.equal(predictions, tf.reshape(self.input_y, [-1]))
 		self.accuracy = tf.reduce_mean(tf.cast(correct_predictions, "float"), name="accuracy")
 
 		if not is_training:

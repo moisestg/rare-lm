@@ -31,7 +31,7 @@ tf.flags.DEFINE_float("keep_prob", 1.0, "Dropout output keep probability")
 tf.flags.DEFINE_float("clip_norm", 5.0, "Norm value to clip the gradients")
 
 # Training parameters
-tf.flags.DEFINE_integer("batch_size", 20, "Batch size")
+tf.flags.DEFINE_integer("batch_size", 32, "Batch size")
 
 FLAGS = tf.flags.FLAGS
 FLAGS._parse_flags()
@@ -53,7 +53,9 @@ test_data, max_len = dataset.get_test_data(FLAGS.test_path, word2id)
 
 with tf.Graph().as_default():
 	
-	FLAGS.num_steps = max_len # TODO: CHANGE !!!
+	FLAGS.batch_size = 1 # Necessary for graph construction
+	print("MAX LEN: "+str(max_len))
+	FLAGS.num_steps = max_len
 	test_input = dataset.get_test_batch_generator(config=FLAGS, data=test_data)
 	with tf.variable_scope("model", reuse=None):
 		model_test = MultilayerLSTM(is_training=False, config=FLAGS, pretrained_emb=None)
@@ -68,5 +70,5 @@ with tf.Graph().as_default():
 		session.run(tf.global_variables())
 
 		print("\n\n** Trained model restored from: "+FLAGS.model_path+" **\n")
-		test_perp, test_acc = dataset.eval_epoch(session, model_test, test_input)
-		print("\n** Valid acc: %.3f: Valid Perplexity: %.3f **\n" % (test_acc, test_perp))
+		test_perp, test_acc = dataset.eval_test(session, model_test, test_input)
+		print("\n** Test Perplexity: %.3f Test accuracy: %.3f **\n" % (test_perp, test_acc))

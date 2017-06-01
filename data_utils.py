@@ -11,7 +11,7 @@ import itertools
 
 _EOS = "<eos>"
 _UNK = "<unk>"
-_PAD = "<pad>"
+_PAD = "<pad>" # id: 0
 
 
 ## MISC ##
@@ -20,6 +20,17 @@ def softmax(x):
 	"""Compute softmax values for each sets of scores in x."""
 	e_x = np.exp(x - np.max(x))
 	return e_x / e_x.sum()
+
+def find_max_len(padded_raw_data):
+	max_len = 0
+	id = padded_raw_data.pop(0)
+	while id != 0:
+		max_len += 1
+		id = padded_raw_data.pop(0)
+	while id == 0:
+		max_len +=1
+		id = padded_raw_data.pop(0)
+	return max_len
 
 
 ## GENERAL (DATA LOADING) ##
@@ -120,6 +131,8 @@ def input_generator(raw_data, batch_size, num_steps):
 
 
 def input_generator_continuous(raw_data, batch_size, num_steps):
+	#batch_size = 1 # support other values? (faster evaluation)
+	#num_steps = find_max_len(raw_data)
 	data_len = len(raw_data)
 	batch_len = data_len // batch_size
 	raw_data = np.array(raw_data, dtype=np.int32)
@@ -143,7 +156,17 @@ class InputGenerator(object):
 	def get_batch(self):
 		return next(self.generator)
 
+
 ## EVAL FUNCTIONS
+
+def write_summary(summary_writer, current_step, values):
+	list_values = []
+	for key, value in values.items():
+		list_values.append(tf.Summary.Value(tag=key, simple_value=value)) # TODO: Support other types of values (e.g. histogram)
+
+	new_summ = tf.Summary()
+	new_summ.value.extend(list_values)
+	summary_writer.add_summary(new_summ, current_step)
 
 def eval_epoch(session, model, input_data, summary_writer=None):
 	costs = 0.0
@@ -180,7 +203,7 @@ def eval_epoch(session, model, input_data, summary_writer=None):
 	accuracy = np.mean(accuracies)
 
 	if summary_writer is not None:
-		self.write_summary(summary_writer, tf.contrib.framework.get_or_create_global_step().eval(session), {"perplexity": perplexity, "accuracy": accuracy}) # Write summary (CORPUS-WISE stats)	
+		write_summary(summary_writer, tf.contrib.framework.get_or_create_global_step().eval(session), {"perplexity": perplexity, "accuracy": accuracy}) # Write summary (CORPUS-WISE stats)	
 
 	return [perplexity , accuracy]
 
@@ -191,7 +214,10 @@ def eval_last_word(session, model, input_data, summary_writer=None):
 
 	fetches = {
 			"loss": model.loss,
+			"correct_predictions": model.correct_predictions
 	}
+
+	accuracy = []
 
 	for step in range(input_data.epoch_size):
 		input_x, input_y = input_data.get_batch()
@@ -201,17 +227,59 @@ def eval_last_word(session, model, input_data, summary_writer=None):
 		}
 		results = session.run(fetches, feed_dict)
 		loss = results["loss"]
+		correct_predictions = results["correct_predictions"]
 		
-		not_pad = [elem != 0 for elem in input_x[0]] # not pad
+		inputs = input_x[0]
+		
+		not_pad = [elem != 0 for elem in inputs] # not pad
 
-		loss_index = max(loc for loc, val in enumerate(not_pad) if val == True) - 1 # previous word
-		losses.append(loss[loss_index])
+		relevant_index = max(loc for loc, val in enumerate(not_pad) if val == True) - 1 # previous word
+		losses.append(loss[relevant_index])
+		accuracy.append(correct_predictions[relevant_index])
 
 	perplexity = np.exp(np.mean(losses))
-	accuracy = 0.0 # TODO: Calculate accuracy
+	accuracy = np.mean(accuracy)  
 
 	if summary_writer is not None:
-		self.write_summary(summary_writer, tf.contrib.framework.get_or_create_global_step().eval(session), {"perplexity": perplexity, "accuracy": accuracy}) # Write summary (CORPUS-WISE stats)
+		write_summary(summary_writer, tf.contrib.framework.get_or_create_global_step().eval(session), {"perplexity": perplexity, "accuracy": accuracy}) # Write summary (CORPUS-WISE stats)
+
+	return [perplexity, accuracy] 
+
+def eval_last_word_cache(session, model, input_data, summary_writer=None):
+	losses = []
+
+	state = session.run(model.initial_state)
+
+	fetches = {
+			"loss": model.loss,
+			"correct_predictions": model.correct_predictions
+	}
+
+	accuracy = 0.0
+
+	for step in range(input_data.epoch_size):
+		input_x, input_y = input_data.get_batch()
+		feed_dict = {
+			model.input_x : input_x,
+			model.input_y : input_y
+		}
+		results = session.run(fetches, feed_dict)
+		loss = results["loss"]
+		correct_predictions = results["correct_predictions"]
+		
+		inputs = input_x[0]
+		
+		not_pad = [elem != 0 for elem in inputs] # not pad
+
+		relevant_index = max(loc for loc, val in enumerate(not_pad) if val == True) - 1 # previous word
+		losses.append(loss[relevant_index])
+		accuracy.append(correct_predictions[relevant_index])
+
+	perplexity = np.exp(np.mean(losses))
+	accuracy = np.mean(accuracy)  
+
+	if summary_writer is not None:
+		write_summary(summary_writer, tf.contrib.framework.get_or_create_global_step().eval(session), {"perplexity": perplexity, "accuracy": accuracy}) # Write summary (CORPUS-WISE stats)
 
 	return [perplexity, accuracy] 
 
@@ -231,58 +299,59 @@ class LambadaDataset(object):
 	def get_dev_data(self, data_path, word2id):
 		return get_word_ids_padded(data_path, word2id, self.tokenizer)
 
+	def get_test_data(self, data_path, word2id):
+		return get_word_ids_padded(data_path, word2id, self.tokenizer)
+
 	def get_train_batch_generator(self, config, data):
 		return InputGenerator(config, data, input_generator)
 
 	def get_dev_batch_generator(self, config, data):
 		return InputGenerator(config, data, input_generator_continuous)
 
+	def get_test_batch_generator(self, config, data):
+		return InputGenerator(config, data, input_generator_continuous)
+
 	def eval_dev(self, session, model, input_data, summary_writer=None):
-		return eval_last_word(session, model, input_data, summary_writer=None)
+		return eval_last_word(session, model, input_data, summary_writer)
 
-	#def eval_test(self, session, model, input_data, summary_writer=None):
-
-	def write_summary(self, summary_writer, current_step, values):
-		list_values = []
-		for key, value in values.items():
-			list_values.append(tf.Summary.Value(tag=key, simple_value=value)) # TODO: Support other types of values (e.g. histogram)
-
-		new_summ = tf.Summary()
-		new_summ.value.extend(list_values)
-		summary_writer.add_summary(new_summ, current_step)
+	def eval_test(self, session, model, input_data, summary_writer=None):
+		return eval_last_word(session, model, input_data, summary_writer)
 
 
+# PENN TREE BANK (PTB) DATASET
 
-# PENN TREE BANK DATASET
-# TODO: test / train wrappers for methods as in LAMBADA
 class PTBDataset(object):
 
 	def tokenizer(self, line):
-		return line.replace("\n", _EOS).strip().split(" ")
+		return line.replace("\n", " "+_EOS).strip().split(" ")
 
 	def get_vocab(self, train_path, vocab_size):
 		return get_vocab(train_path, vocab_size, self.tokenizer, use_unk=False)
 
-	def get_word_ids(self, data_path, word2id):
+	def get_train_data(self, data_path, word2id):
 		return get_word_ids(data_path, word2id, self.tokenizer)
 
-	def get_batch_generator(self, config, data):
+	def get_dev_data(self, data_path, word2id):
+		return get_word_ids(data_path, word2id, self.tokenizer)
+
+	def get_test_data(self, data_path, word2id):
+		return get_word_ids(data_path, word2id, self.tokenizer)
+
+	def get_train_batch_generator(self, config, data):
 		return InputGenerator(config, data, input_generator=input_generator)
 
-	def write_summary(self, summary_writer, current_step, values):
-		list_values = []
-		for key, value in values.items():
-			list_values.append(tf.Summary.Value(tag=key, simple_value=value)) # TODO: Support other types of values (e.g. histogram)
+	def get_dev_batch_generator(self, config, data):
+		return InputGenerator(config, data, input_generator=input_generator)
 
-		new_summ = tf.Summary()
-		new_summ.value.extend(list_values)
-		summary_writer.add_summary(new_summ, current_step)
+	def get_test_batch_generator(self, config, data):
+		return InputGenerator(config, data, input_generator=input_generator)
 
 	def eval_dev(self, session, model, input_data, summary_writer=None):
-		return eval_epoch(session, model, input_data, summary_writer=None)
+		return eval_epoch(session, model, input_data, summary_writer)
 
 	def eval_test(self, session, model, input_data, summary_writer=None):
-		return eval_epoch(session, model, input_data, summary_writer=None)
+		return eval_epoch(session, model, input_data, summary_writer)
+
 
 ## WORD EMBEDDINGS ##
 
@@ -321,36 +390,3 @@ def get_word2vec(train_path, vector_dim, word2id):
 		pickle.dump(vectors, f)
 
 	return vectors
-
-
-## LAMBADA
-
-
-
-
-
-
-
-	# with tf.name_scope(name, "input_iterator", [raw_data, batch_size, num_steps]):
-	# 	raw_data = tf.convert_to_tensor(raw_data, name="raw_data", dtype=tf.int32)
-
-	# 	data_len = tf.size(raw_data)
-	# 	batch_len = data_len // batch_size
-	# 	data = tf.reshape(raw_data[0 : batch_size * batch_len],
-	# 										[batch_size, batch_len])
-
-	# 	epoch_size = batch_len  // (num_steps+1)
-	# 	assertion = tf.assert_positive(
-	# 			epoch_size,
-	# 			message="epoch_size == 0, decrease batch_size or num_steps")
-	# 	with tf.control_dependencies([assertion]):
-	# 		epoch_size = tf.identity(epoch_size, name="epoch_size")
-
-	# 	i = tf.train.range_input_producer(epoch_size, shuffle=False).dequeue()
-	# 	slice_xy = tf.strided_slice(data, [0, i * (num_steps+1)],
-	# 											 [batch_size, (i + 1) * (num_steps+1)])
-	# 	x = tf.strided_slice(slice_xy, [0, 0], [batch_size, num_steps])
-	# 	y = tf.strided_slice(slice_xy, [0, 1], [batch_size, num_steps+1])
-	# 	x.set_shape([batch_size, num_steps])
-	# 	y.set_shape([batch_size, num_steps])
-	# 	return x, y
