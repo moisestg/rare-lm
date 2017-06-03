@@ -294,8 +294,8 @@ def eval_last_word_cache(session, model, input_data, summary_writer=None):
 		rel_logits = logits[last_word_index, :]
 		word_probs = softmax(rel_logits)
 		print("CHECK")
-		print(rel_logits)
-		print(word_probs)
+		print(len(rel_logits))
+		print(len(word_probs))
 		
 
 		losses.append(loss[relevant_index])
