@@ -278,19 +278,20 @@ def eval_last_word_cache(session, model, input_data, summary_writer=None):
 		correct_ids = input_y[0]
 
 		if(step == 0):
-			print(rnn_outputs)
-			print(rnn_outputs.shape)
-			print(logits)
+			print(rnn_outputs[0])
+			print(len(rnn_outputs))
+			#print(logits)
 			print(logits.shape)
 			print(correct_ids)
 		
 		not_pad = [elem != 0 for elem in inputs] # not pad
-		relevant_index = max(loc for loc, val in enumerate(not_pad) if val == True) - 1 # previous word
+		last_word_index = max(loc for loc, val in enumerate(not_pad) if val == True)
+		relevant_index = last_word_index - 1 # previous word
 
 		# Populate cache
 
 		# Calculate LSTM probabilites manually
-
+		word_probs = softmax(logits[])
 		
 
 		losses.append(loss[relevant_index])
