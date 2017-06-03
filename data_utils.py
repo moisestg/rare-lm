@@ -246,17 +246,20 @@ def eval_last_word(session, model, input_data, summary_writer=None):
 	return [perplexity, accuracy] 
 
 def eval_last_word_cache(session, model, input_data, summary_writer=None):
-	losses = []
+	
 
-	state = session.run(model.initial_state)
+	#state = session.run(model.initial_state)
 
 	fetches = {
-			"loss": model.loss,
-			"correct_predictions": model.correct_predictions
+		"outputs": model.outputs,
+		"logits": model.logits,
+		#"loss": model.loss,
+		#"correct_predictions": model.correct_predictions
 	}
 
+	losses = []
 	accuracy = 0.0
-
+	
 	for step in range(input_data.epoch_size):
 		input_x, input_y = input_data.get_batch()
 		feed_dict = {
@@ -264,14 +267,32 @@ def eval_last_word_cache(session, model, input_data, summary_writer=None):
 			model.input_y : input_y
 		}
 		results = session.run(fetches, feed_dict)
-		loss = results["loss"]
-		correct_predictions = results["correct_predictions"]
+		rnn_outputs = results["outputs"]
+		logits = results["logits"]
+
+		#loss = results["loss"]
+		#correct_predictions = results["correct_predictions"]
 		
+		cache = collections.deque(maxlen=250) # bigger than maximum number of words?
 		inputs = input_x[0]
+		correct_ids = input_y[0]
+
+		if(step == 0):
+			print(rnn_outputs)
+			print(rnn_outputs.shape)
+			print(logits)
+			print(logits.shape)
+			print(correct_ids)
 		
 		not_pad = [elem != 0 for elem in inputs] # not pad
-
 		relevant_index = max(loc for loc, val in enumerate(not_pad) if val == True) - 1 # previous word
+
+		# Populate cache
+
+		# Calculate LSTM probabilites manually
+
+		
+
 		losses.append(loss[relevant_index])
 		accuracy.append(correct_predictions[relevant_index])
 
