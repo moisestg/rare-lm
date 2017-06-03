@@ -267,8 +267,8 @@ def eval_last_word_cache(session, model, input_data, summary_writer=None):
 			model.input_y : input_y
 		}
 		results = session.run(fetches, feed_dict)
-		rnn_outputs = results["outputs"]
-		logits = results["logits"]
+		rnn_outputs = results["outputs"] # list of np arrays of [1, hidden_size]
+		logits = results["logits"] # np.array of [max_len, vocab_size]
 
 		#loss = results["loss"]
 		#correct_predictions = results["correct_predictions"]
@@ -277,12 +277,12 @@ def eval_last_word_cache(session, model, input_data, summary_writer=None):
 		inputs = input_x[0]
 		correct_ids = input_y[0]
 
-		if(step == 0):
-			print(rnn_outputs[0].shape)
-			print(len(rnn_outputs))
-			#print(logits)
-			print(logits.shape)
-			print(correct_ids)
+		
+		print(rnn_outputs[0].shape)
+		print(len(rnn_outputs))
+		#print(logits)
+		print(logits.shape)
+		print(correct_ids)
 		
 		not_pad = [elem != 0 for elem in inputs] # not pad
 		last_word_index = max(loc for loc, val in enumerate(not_pad) if val == True)
@@ -291,7 +291,11 @@ def eval_last_word_cache(session, model, input_data, summary_writer=None):
 		# Populate cache
 
 		# Calculate LSTM probabilites manually
-		#word_probs = softmax(logits[])
+		rel_logits = logits[last_word_index, :]
+		word_probs = softmax(rel_logits)
+		print("CHECK")
+		print(rel_logits)
+		print(word_probs)
 		
 
 		losses.append(loss[relevant_index])
