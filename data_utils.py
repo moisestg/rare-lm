@@ -278,7 +278,7 @@ def eval_last_word_cache(session, model, input_data, summary_writer=None):
 		correct_ids = input_y[0]
 
 		if(step == 0):
-			print(rnn_outputs[0])
+			print(rnn_outputs[0].shape)
 			print(len(rnn_outputs))
 			#print(logits)
 			print(logits.shape)
