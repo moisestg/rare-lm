@@ -284,7 +284,7 @@ def eval_last_word_cache(session, model, input_data, summary_writer=None):
 
 		# Calculate LSTM probabilites manually
 		relevant_logits = logits[relevant_index, :]
-		word_probs = softmax(rel_logits)
+		word_probs = softmax(relevant_logits)
 
 
 		# Calculate cache probabilities
