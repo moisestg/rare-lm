@@ -325,7 +325,7 @@ def eval_last_word_cache(session, model, input_data, summary_writer=None):
 			print(logits.shape)
 
 			print("CHECK")
-			print(len(rel_logits))
+			print(len(relevant_logits))
 			print(len(word_probs))
 
 
