@@ -294,7 +294,7 @@ def eval_last_word_cache(session, model, input_data, summary_writer=None):
 		for i in range(relevant_index): # words previous to the prediction
 			pseudo_logit = np.exp( theta*np.sum(h_t*rnn_outputs[i]) )
 			output_id = inputs[i+1] # or correct_ids[i]
-			if  in cache_logits: 
+			if output_id in cache_logits: 
 				cache[output_id] += pseudo_logit
 			else:
 				cache[output_id] = pseudo_logit
@@ -323,7 +323,7 @@ def eval_last_word_cache(session, model, input_data, summary_writer=None):
 			print(len(rnn_outputs))
 			#print(logits)
 			print(logits.shape)
-			
+
 			print("CHECK")
 			print(len(rel_logits))
 			print(len(word_probs))
