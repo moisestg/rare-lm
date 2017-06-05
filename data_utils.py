@@ -258,7 +258,7 @@ def eval_last_word_cache(session, model, input_data, summary_writer=None):
 	}
 
 	losses = []
-	accuracy = 0.0
+	accuracy = []
 	
 	for step in range(input_data.epoch_size):
 		input_x, input_y = input_data.get_batch()
@@ -270,36 +270,63 @@ def eval_last_word_cache(session, model, input_data, summary_writer=None):
 		rnn_outputs = results["outputs"] # list of np arrays of [1, hidden_size]
 		logits = results["logits"] # np.array of [max_len, vocab_size]
 
-		#loss = results["loss"]
-		#correct_predictions = results["correct_predictions"]
-		
-		cache = collections.deque(maxlen=250) # bigger than maximum number of words?
 		inputs = input_x[0]
-		correct_ids = input_y[0]
+		#correct_ids = input_y[0]
 
 		
 		print(rnn_outputs[0].shape)
 		print(len(rnn_outputs))
 		#print(logits)
 		print(logits.shape)
-		print(correct_ids)
+		#print(correct_ids)
 		
 		not_pad = [elem != 0 for elem in inputs] # not pad
 		last_word_index = max(loc for loc, val in enumerate(not_pad) if val == True)
 		relevant_index = last_word_index - 1 # previous word
 
-		# Populate cache
+		# PARAMS
+
+		theta = 0.3
+		interpol = 0.7
 
 		# Calculate LSTM probabilites manually
-		rel_logits = logits[last_word_index, :]
+		relevant_logits = logits[relevant_index, :]
 		word_probs = softmax(rel_logits)
 		print("CHECK")
 		print(len(rel_logits))
 		print(len(word_probs))
-		
 
-		losses.append(loss[relevant_index])
-		accuracy.append(correct_predictions[relevant_index])
+		# Calculate cache probabilities
+		h_t = rnn_outputs[relevant_index]
+		cache_logits = dict() # key: output word, value: logit
+
+		for i in range(relevant_index): # words previous to the prediction
+			pseudo_logit = np.exp( theta*np.sum(h_t*rnn_outputs[i]) )
+			output_id = inputs[i+1] # or correct_ids[i]
+			if  in cache_logits: 
+				cache[output_id] += pseudo_logit
+			else:
+				cache[output_id] = pseudo_logit
+
+		total_sum = sum(cache_logits.values())
+		cache_probs = [float(val)/float(total_sum) for val in cache_logits.values()]
+		cache_ids = cache_logits.keys()
+
+		# Merge word and cache probabilities
+		final_probs = (1-interpol)*np.array(word_probs)
+
+		for i, output_id in enumerate(cache_ids):
+			final_probs[output_id] += interpol*cache_probs[i]
+
+		# Calculate loss
+		true_output_id = inputs[last_word_index]
+		loss = -np.log( final_probs[ true_output_id ] )
+		losses.append(loss)
+
+		# And accuracy
+		predicted_id = np.argmax(final_probs)
+		accuracy.append( predicted_id == true_output_id )
+
 
 	perplexity = np.exp(np.mean(losses))
 	accuracy = np.mean(accuracy)  
