@@ -295,9 +295,9 @@ def eval_last_word_cache(session, model, input_data, summary_writer=None):
 			pseudo_logit = np.exp( theta*np.sum(h_t*rnn_outputs[i]) )
 			output_id = inputs[i+1] # or correct_ids[i]
 			if output_id in cache_logits: 
-				cache[output_id] += pseudo_logit
+				cache_logits[output_id] += pseudo_logit
 			else:
-				cache[output_id] = pseudo_logit
+				cache_logits[output_id] = pseudo_logit
 
 		total_sum = sum(cache_logits.values())
 		cache_probs = [float(val)/float(total_sum) for val in cache_logits.values()]
