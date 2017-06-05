@@ -272,13 +272,6 @@ def eval_last_word_cache(session, model, input_data, summary_writer=None):
 
 		inputs = input_x[0]
 		#correct_ids = input_y[0]
-
-		
-		print(rnn_outputs[0].shape)
-		print(len(rnn_outputs))
-		#print(logits)
-		print(logits.shape)
-		#print(correct_ids)
 		
 		not_pad = [elem != 0 for elem in inputs] # not pad
 		last_word_index = max(loc for loc, val in enumerate(not_pad) if val == True)
@@ -292,9 +285,7 @@ def eval_last_word_cache(session, model, input_data, summary_writer=None):
 		# Calculate LSTM probabilites manually
 		relevant_logits = logits[relevant_index, :]
 		word_probs = softmax(rel_logits)
-		print("CHECK")
-		print(len(rel_logits))
-		print(len(word_probs))
+
 
 		# Calculate cache probabilities
 		h_t = rnn_outputs[relevant_index]
@@ -326,6 +317,16 @@ def eval_last_word_cache(session, model, input_data, summary_writer=None):
 		# And accuracy
 		predicted_id = np.argmax(final_probs)
 		accuracy.append( predicted_id == true_output_id )
+
+		if(step==0):
+			print(rnn_outputs[0].shape)
+			print(len(rnn_outputs))
+			#print(logits)
+			print(logits.shape)
+			
+			print("CHECK")
+			print(len(rel_logits))
+			print(len(word_probs))
 
 
 	perplexity = np.exp(np.mean(losses))
