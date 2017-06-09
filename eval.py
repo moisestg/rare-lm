@@ -50,7 +50,7 @@ test_data, max_len = dataset.get_test_data(FLAGS.test_path, word2id)
 
 with tf.Graph().as_default():
 	
-	FLAGS.batch_size = 1 # Necessary for graph construction
+	#FLAGS.batch_size = 1 # Necessary for graph construction
 	print("MAX LEN: "+str(max_len))
 	FLAGS.num_steps = max_len
 	test_input = dataset.get_test_batch_generator(config=FLAGS, data=test_data)

@@ -237,9 +237,9 @@ def eval_last_word(session, model, input_data, summary_writer=None):
 
 		relevant_indexes = np.apply_along_axis(relevant_index, 1, input_x)
 		loss = np.reshape(loss, (batch_size, -1))
-		losses = losses.append( loss[np.arange(len(loss)), relevant_indexes] )
+		losses = np.append( losses, loss[np.arange(len(loss)), relevant_indexes] )
 		correct_predictions = np.reshape(correct_predictions, (batch_size, -1))
-		accuracies = accuracies.append(correct_predictions[relevant_index])
+		accuracies = np.append( accuracies, correct_predictions[np.arange(len(correct_predictions)), relevant_indexes] )
 
 	perplexity = np.exp(np.mean(losses))
 	accuracy = np.mean(accuracies)  
