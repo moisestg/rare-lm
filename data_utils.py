@@ -236,10 +236,16 @@ def eval_last_word(session, model, input_data, summary_writer=None):
 		#not_pad = [elem != 0 for elem in inputs] # not pad
 
 		relevant_indexes = np.apply_along_axis(relevant_index, 1, input_x)
+		print(loss.shape)
 		loss = np.reshape(loss, (batch_size, -1))
 		losses = np.append( losses, loss[np.arange(len(loss)), relevant_indexes] )
 		correct_predictions = np.reshape(correct_predictions, (batch_size, -1))
 		accuracies = np.append( accuracies, correct_predictions[np.arange(len(correct_predictions)), relevant_indexes] )
+
+		if(step == 0):
+			print(input_x)
+			print(relevant_indexes)
+			print(loss.shape)
 
 	perplexity = np.exp(np.mean(losses))
 	accuracy = np.mean(accuracies)  
