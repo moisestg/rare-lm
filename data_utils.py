@@ -6,6 +6,7 @@ import numpy as np
 import gensim
 import pickle
 import time
+import math
 
 import itertools
 
@@ -134,6 +135,7 @@ def input_generator(raw_data, batch_size, num_steps):
 def input_generator_continuous(raw_data, batch_size, num_steps):
 	raw_data = np.array(raw_data, dtype=np.int32)
 	data = np.reshape(raw_data, [-1, num_steps+1])
+	epoch_size = math.ceil(data.shape[0]/batch_size)
 	for i in itertools.cycle(range(epoch_size)):
 		x_batch = data[i*batch_size:i*batch_size+batch_size, 0:num_steps]
 		y_batch = data[i*batch_size:i*batch_size+batch_size, 1:num_steps+1]
