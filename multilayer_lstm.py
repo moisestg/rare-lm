@@ -58,7 +58,7 @@ class MultilayerLSTM(object):
 				[tf.reshape(self.input_y, [-1])],
 				[tf.ones([batch_size * num_steps], dtype=tf.float32)])
 		
-		self.cost = cost = tf.reduce_sum(loss) / batch_size # later in train.py also divided by num_steps (as expected)
+		self.cost = cost = tf.reduce_sum(loss) / tf.to_float(batch_size) # later in train.py also divided by num_steps (as expected)
 		
 
 		## STATS ##

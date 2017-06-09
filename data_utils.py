@@ -210,7 +210,7 @@ def eval_epoch(session, model, input_data, summary_writer=None):
 def eval_last_word(session, model, input_data, summary_writer=None):
 	losses = []
 
-	state = session.run(model.initial_state)
+	#state = session.run(model.initial_state)
 
 	fetches = {
 			"loss": model.loss,
