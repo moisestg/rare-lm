@@ -5,6 +5,7 @@ import tensorflow as tf
 import numpy as np
 import gensim
 import pickle
+import time
 
 import itertools
 
@@ -131,17 +132,11 @@ def input_generator(raw_data, batch_size, num_steps):
 
 
 def input_generator_continuous(raw_data, batch_size, num_steps):
-	#batch_size = 1 # support other values? (faster evaluation)
-	#num_steps = find_max_len(raw_data)
-	data_len = len(raw_data)
-	batch_len = data_len // batch_size
 	raw_data = np.array(raw_data, dtype=np.int32)
-	data = np.reshape(raw_data[0 : batch_size * batch_len], [batch_size, batch_len])
-	epoch_size = batch_len  // (num_steps+1)
+	data = np.reshape(raw_data, [-1, num_steps+1])
 	for i in itertools.cycle(range(epoch_size)):
-		slice_xy = data[:, i*(num_steps+1):(i+1)*(num_steps+1)]
-		x_batch = slice_xy[:, 0:num_steps]
-		y_batch = slice_xy[:, 1:num_steps+1]
+		x_batch = data[i*batch_size:i*batch_size+batch_size, 0:num_steps]
+		y_batch = data[i*batch_size:i*batch_size+batch_size, 1:num_steps+1]
 		yield x_batch, y_batch
 
 
@@ -220,6 +215,8 @@ def eval_last_word(session, model, input_data, summary_writer=None):
 	def relevant_index(row):
 		return max(loc for loc, val in enumerate(row) if val != 0) - 1
 
+	start_time = time.time()
+
 	for step in range(input_data.epoch_size):
 		input_x, input_y = input_data.get_batch()
 		batch_size = input_x.shape[0]
@@ -252,6 +249,9 @@ def eval_last_word(session, model, input_data, summary_writer=None):
 
 	if summary_writer is not None:
 		write_summary(summary_writer, tf.contrib.framework.get_or_create_global_step().eval(session), {"perplexity": perplexity, "accuracy": accuracy}) # Write summary (CORPUS-WISE stats)
+
+	print("TIME:")
+	print(time.time()-start_time)
 
 	return [perplexity, accuracy] 
 
