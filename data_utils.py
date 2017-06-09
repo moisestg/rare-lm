@@ -134,12 +134,8 @@ def input_generator(raw_data, batch_size, num_steps):
 
 def input_generator_continuous(raw_data, batch_size, num_steps):
 	raw_data = np.array(raw_data, dtype=np.int32)
-	print("GENERATOR")
-	print(raw_data.shape)
 	data = np.reshape(raw_data, [-1, num_steps+1])
-	print(data.shape)
 	epoch_size = math.ceil(data.shape[0]/batch_size)
-	print(epoch_size)
 	for i in itertools.cycle(range(epoch_size)):
 		x_batch = data[i*batch_size:i*batch_size+batch_size, 0:num_steps]
 		y_batch = data[i*batch_size:i*batch_size+batch_size, 1:num_steps+1]
@@ -224,7 +220,7 @@ def eval_last_word(session, model, input_data, summary_writer=None):
 
 	start_time = time.time()
 
-	epoch_size = math.ceil(len(input_data.data)/input_data.batch_size)
+	epoch_size = math.ceil(5153/input_data.batch_size)
 	for step in range(epoch_size):
 		input_x, input_y = input_data.get_batch()
 		batch_size = input_x.shape[0]
@@ -238,23 +234,13 @@ def eval_last_word(session, model, input_data, summary_writer=None):
 		correct_predictions = results["correct_predictions"]
 		
 		relevant_indexes = np.apply_along_axis(relevant_index, 1, input_x)
-		print()
-		print(loss.shape)
 		loss = np.reshape(loss, (batch_size, -1))
 		losses = np.append( losses, loss[np.arange(len(loss)), relevant_indexes] )
 		correct_predictions = np.reshape(correct_predictions, (batch_size, -1))
 		accuracies = np.append( accuracies, correct_predictions[np.arange(len(correct_predictions)), relevant_indexes] )
 
-		print(input_x)
-		print(input_x.shape)
-		print(relevant_indexes)
-		print(loss.shape)
-		print(correct_predictions.shape)
-
 	perplexity = np.exp(np.mean(losses))
 	accuracy = np.mean(accuracies)  
-
-	print(len(losses))
 
 	if summary_writer is not None:
 		write_summary(summary_writer, tf.contrib.framework.get_or_create_global_step().eval(session), {"perplexity": perplexity, "accuracy": accuracy}) # Write summary (CORPUS-WISE stats)
