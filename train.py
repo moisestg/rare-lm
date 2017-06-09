@@ -70,7 +70,7 @@ with tf.Graph().as_default():
 	with tf.variable_scope("model", reuse=None, initializer=initializer):
 		model_train = MultilayerLSTM(is_training=True, config=FLAGS, pretrained_emb=pretrained_emb)
 
-	FLAGS.batch_size = 1 # Necessary for graph construction
+	#FLAGS.batch_size = 1 # Necessary for graph construction
 	print("MAX LEN: "+str(max_len))
 	FLAGS.num_steps = max_len
 	valid_input = dataset.get_dev_batch_generator(config=FLAGS, data=valid_data)
@@ -118,7 +118,7 @@ with tf.Graph().as_default():
 			# Train epoch variables
 			start_time = time.time()
 			iters = 0
-			state = session.run(model_train.initial_state) # initial state defined in the model
+			state = session.run(model_train.initial_state, {model_train.batch_size: config.batch_size}) # initial state defined in the model
 
 			fetches = {
 				"cost": model_train.cost,

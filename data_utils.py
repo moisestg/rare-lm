@@ -208,38 +208,41 @@ def eval_epoch(session, model, input_data, summary_writer=None):
 	return [perplexity , accuracy]
 
 def eval_last_word(session, model, input_data, summary_writer=None):
-	losses = []
-
-	#state = session.run(model.initial_state)
 
 	fetches = {
 			"loss": model.loss,
 			"correct_predictions": model.correct_predictions
 	}
 
-	accuracy = []
+	accuracies = np.array([])
+	losses = np.array([])
+
+	def relevant_index(row):
+		return max(loc for loc, val in enumerate(row) if val != 0) - 1
 
 	for step in range(input_data.epoch_size):
 		input_x, input_y = input_data.get_batch()
+		batch_size = input_x.shape[0]
 		feed_dict = {
 			model.input_x : input_x,
 			model.input_y : input_y,
-			model.batch_size: input_x.shape[0],
+			model.batch_size: batch_size,
 		}
 		results = session.run(fetches, feed_dict)
 		loss = results["loss"]
 		correct_predictions = results["correct_predictions"]
 		
-		inputs = input_x[0]
-		
-		not_pad = [elem != 0 for elem in inputs] # not pad
+		#inputs = input_x[0]
+		#not_pad = [elem != 0 for elem in inputs] # not pad
 
-		relevant_index = max(loc for loc, val in enumerate(not_pad) if val == True) - 1 # previous word
-		losses.append(loss[relevant_index])
-		accuracy.append(correct_predictions[relevant_index])
+		relevant_indexes = np.apply_along_axis(relevant_index, 1, input_x)
+		loss = np.reshape(loss, (batch_size, -1))
+		losses = losses.append( loss[np.arange(len(loss)), relevant_indexes] )
+		correct_predictions = np.reshape(correct_predictions, (batch_size, -1))
+		accuracies = accuracies.append(correct_predictions[relevant_index])
 
 	perplexity = np.exp(np.mean(losses))
-	accuracy = np.mean(accuracy)  
+	accuracy = np.mean(accuracies)  
 
 	if summary_writer is not None:
 		write_summary(summary_writer, tf.contrib.framework.get_or_create_global_step().eval(session), {"perplexity": perplexity, "accuracy": accuracy}) # Write summary (CORPUS-WISE stats)
