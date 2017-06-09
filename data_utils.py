@@ -183,8 +183,8 @@ def eval_epoch(session, model, input_data, summary_writer=None):
 	for step in range(input_data.epoch_size):
 		input_x, input_y = input_data.get_batch()
 		feed_dict = {
-			model.input_x : input_x,
-			model.input_y : input_y
+			model.input_x: input_x,
+			model.input_y: input_y,
 		}
 		for i, (c, h) in enumerate(model.initial_state):
 			feed_dict[c] = state[i].c
@@ -223,7 +223,8 @@ def eval_last_word(session, model, input_data, summary_writer=None):
 		input_x, input_y = input_data.get_batch()
 		feed_dict = {
 			model.input_x : input_x,
-			model.input_y : input_y
+			model.input_y : input_y,
+			model.batch_size: input_x.shape[0],
 		}
 		results = session.run(fetches, feed_dict)
 		loss = results["loss"]
@@ -369,7 +370,7 @@ class LambadaDataset(object):
 		return eval_last_word(session, model, input_data, summary_writer)
 
 	def eval_test(self, session, model, input_data, summary_writer=None):
-		return eval_last_word_cache(session, model, input_data, summary_writer)
+		return eval_last_word(session, model, input_data, summary_writer)
 
 
 # PENN TREE BANK (PTB) DATASET

@@ -15,7 +15,6 @@ import collections
 tf.flags.DEFINE_string("train_path", "../simple-examples/data/ptb.train.txt", "Path to the training data") #/home/moises/thesis/lambada/lambada-dataset/train-novels/
 tf.flags.DEFINE_string("test_path", "../simple-examples/data/ptb.test.txt", "Path to the test data") #/home/moises/thesis/lambada/lambada-dataset/train-novels/
 
-
 # Model parameters
 tf.flags.DEFINE_string("model_path", "", "Path to the trained model") 
 #tf.flags.DEFINE_string("pretrained_emb", "word2vec", "Pretrained vectors to initialize the embedding matrix")
@@ -31,7 +30,7 @@ tf.flags.DEFINE_float("keep_prob", 1.0, "Dropout output keep probability")
 tf.flags.DEFINE_float("clip_norm", 5.0, "Norm value to clip the gradients")
 
 # Training parameters
-tf.flags.DEFINE_integer("batch_size", 32, "Batch size")
+tf.flags.DEFINE_integer("batch_size", 128, "Batch size")
 
 FLAGS = tf.flags.FLAGS
 FLAGS._parse_flags()
@@ -45,9 +44,7 @@ print("\n")
 
 # Load data
 dataset = data_utils.LambadaDataset()
-
 word2id, id2word = dataset.get_vocab(FLAGS.train_path, FLAGS.vocab_size)
-
 test_data, max_len = dataset.get_test_data(FLAGS.test_path, word2id)
 
 

@@ -2,7 +2,6 @@ import tensorflow as tf
 from multilayer_lstm import MultilayerLSTM
 import data_utils
 import numpy as np
-
 import time
 import os
 import sys
@@ -50,9 +49,7 @@ print("\n")
 
 # Load data
 dataset = data_utils.LambadaDataset()
-
 word2id, id2word = dataset.get_vocab(FLAGS.train_path, FLAGS.vocab_size)
-
 train_data = dataset.get_train_data(FLAGS.train_path, word2id)
 valid_data, max_len = dataset.get_dev_data(FLAGS.dev_path, word2id)
 
@@ -64,6 +61,7 @@ else:
 	pretrained_emb = None
 
 
+# Define graph
 with tf.Graph().as_default():
 	initializer = tf.random_uniform_initializer(-.05, .05) # Default variables initializer
 
@@ -87,14 +85,13 @@ with tf.Graph().as_default():
 		os.makedirs(checkpoint_path)
 	saver = tf.train.Saver(tf.global_variables(), max_to_keep=FLAGS.num_checkpoints)
 
-	
+	# Create session	
 	sv = tf.train.Supervisor(logdir=None)
 	with sv.managed_session() as session:
 
 		## TRAIN LOOP ##
 
 		# Restore previous model (if any) to resume training
-		# TODO: Save decay_rate so it is also restored appropriately?
 		if FLAGS.restore_path is not None:
 			saver.restore(session, FLAGS.restore_path)
 			print("\n\n\n** Model restored from: "+FLAGS.restore_path+" **\n\n\n")
@@ -114,7 +111,8 @@ with tf.Graph().as_default():
 
 			# Decay of the learning rate (if any)
 			if FLAGS.learning_rate_decay is not None:
-				lr_decay = FLAGS.learning_rate_decay ** max(i + 1 - 4, 0.0)
+				#lr_decay = FLAGS.learning_rate_decay ** max(i + 1 - 4, 0.0)
+				lr_decay = FLAGS.learning_rate_decay
 				model_train.assign_lr(session, FLAGS.learning_rate * lr_decay)
 
 			# Train epoch variables
@@ -129,13 +127,17 @@ with tf.Graph().as_default():
 				"eval_op" : model_train.train_op,
 			}
 
-			for step in range(train_input.epoch_size): # Iterate through all batches (one epoch)
-				# Feed initial state 
+			# Iterate through all batches (one epoch)
+			for step in range(train_input.epoch_size): 
+				
 				input_x, input_y = train_input.get_batch()
 				feed_dict = {
-					model_train.input_x : input_x,
-					model_train.input_y : input_y
+					model_train.input_x: input_x,
+					model_train.input_y: input_y,
+					model_train.batch_size: input_x.shape[0],
 				}
+
+				# Feed previous state
 				for i, (c, h) in enumerate(model_train.initial_state):
 					feed_dict[c] = state[i].c
 					feed_dict[h] = state[i].h
@@ -152,11 +154,11 @@ with tf.Graph().as_default():
 
 				# Print some info
 				if step % 100 == 0: # epoch_size = 90687 / (model_train.input.epoch_size // 10) == 10
-					print("global step: %i perplexity: %.3f speed: %.0f wps" %
-								(current_step, perplexity,
+					print("Step: %i: Perplexity: %.3f, Accuracy: %.3f, Speed: %.0f wps" %
+								(current_step, perplexity, accuracy,
 								 iters * train_input.batch_size / (time.time() - start_time)))
 
-				# Write summary 
+				# Write train summary 
 				if step % 1000 == 0: # (model_train.input.epoch_size // 10) == 10
 					data_utils.write_summary(train_summary_writer, current_step, {"perplexity": perplexity, "accuracy": accuracy})
 
@@ -170,4 +172,4 @@ with tf.Graph().as_default():
 					path = saver.save(session, checkpoint_prefix, global_step=current_step)
 					print("\n** Saved model checkpoint to {} **\n".format(path))
 
-			print("\n\n-----TIME EPOCH: "+str(time.time() - start_time)+" s ------\n")
+			print("\n\n----- Last epoch took a total of: "+str(time.time() - start_time)+" s ------\n")
