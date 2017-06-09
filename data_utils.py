@@ -134,6 +134,7 @@ def input_generator(raw_data, batch_size, num_steps):
 
 def input_generator_continuous(raw_data, batch_size, num_steps):
 	raw_data = np.array(raw_data, dtype=np.int32)
+	print("GENERATOR")
 	print(raw_data.shape)
 	data = np.reshape(raw_data, [-1, num_steps+1])
 	print(data.shape)
