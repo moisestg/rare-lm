@@ -143,6 +143,7 @@ class input_generator_continuous(object):
 
 	def __init__(self, raw_data, batch_size, num_steps):
 		self.batch_size = batch_size
+		self.num_steps = num_steps
 		raw_data = np.array(raw_data, dtype=np.int32)
 		self.data = np.reshape(raw_data, [-1, num_steps+1])
 		self.epoch_size = math.ceil(self.data.shape[0]/batch_size)
