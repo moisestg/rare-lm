@@ -165,7 +165,7 @@ class InputGenerator(object):
 		self.num_steps = num_steps = config.num_steps
 		generator = input_generator(data, batch_size, num_steps)
 		self.epoch_size = generator.epoch_size
-		self.generator = generator.gen
+		self.generator = generator.gen()
 
 	def get_batch(self):
 		return next(self.generator)
