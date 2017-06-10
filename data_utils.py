@@ -120,26 +120,42 @@ def get_word_ids_padded(data_path, word2id, tokenizer):
 	return data, max_seq_length
 
 
-def input_generator(raw_data, batch_size, num_steps):
-	data_len = len(raw_data)
-	batch_len = data_len // batch_size
-	raw_data = np.array(raw_data, dtype=np.int32)
-	data = np.reshape(raw_data[0 : batch_size * batch_len], [batch_size, batch_len])
-	epoch_size = (batch_len - 1) // num_steps
-	for i in itertools.cycle(range(epoch_size)):
-		x_batch = data[:, i*num_steps:(i+1)*num_steps]
-		y_batch = data[:, i*num_steps+1:(i+1)*num_steps+1]
-		yield x_batch, y_batch
+class input_generator(object):
+	
+	def __init__(self, raw_data, batch_size, num_steps):
+		self.num_steps = num_steps
+		data_len = len(raw_data)
+		batch_len = data_len // batch_size
+		raw_data = np.array(raw_data, dtype=np.int32)
+		self.data = np.reshape(raw_data[0 : batch_size * batch_len], [batch_size, batch_len])
+		self.epoch_size = (batch_len - 1) // num_steps
 
+	def gen(self):
+		data = self.data
+		num_steps = self.num_steps
+		epoch_size = self.epoch_size
+		for i in itertools.cycle(range(epoch_size)):
+			x_batch = data[:, i*num_steps:(i+1)*num_steps]
+			y_batch = data[:, i*num_steps+1:(i+1)*num_steps+1]
+			yield x_batch, y_batch
 
-def input_generator_continuous(raw_data, batch_size, num_steps):
-	raw_data = np.array(raw_data, dtype=np.int32)
-	data = np.reshape(raw_data, [-1, num_steps+1])
-	epoch_size = math.ceil(data.shape[0]/batch_size)
-	for i in itertools.cycle(range(epoch_size)):
-		x_batch = data[i*batch_size:i*batch_size+batch_size, 0:num_steps]
-		y_batch = data[i*batch_size:i*batch_size+batch_size, 1:num_steps+1]
-		yield x_batch, y_batch
+class input_generator_continuous(object):
+
+	def __init__(self, raw_data, batch_size, num_steps):
+		self.batch_size = batch_size
+		raw_data = np.array(raw_data, dtype=np.int32)
+		self.data = np.reshape(raw_data, [-1, num_steps+1])
+		self.epoch_size = math.ceil(self.data.shape[0]/batch_size)
+
+	def gen(self):
+		data = self.data
+		num_steps = self.num_steps
+		epoch_size = self.epoch_size
+		batch_size = self.batch_size
+		for i in itertools.cycle(range(epoch_size)):
+			x_batch = data[i*batch_size:i*batch_size+batch_size, 0:num_steps]
+			y_batch = data[i*batch_size:i*batch_size+batch_size, 1:num_steps+1]
+			yield x_batch, y_batch
 
 
 class InputGenerator(object):
@@ -147,9 +163,9 @@ class InputGenerator(object):
 	def __init__(self, config, data, input_generator):
 		self.batch_size = batch_size = config.batch_size
 		self.num_steps = num_steps = config.num_steps
-		self.data = data
-		self.epoch_size = ((len(data) // batch_size) - 1) // num_steps
-		self.generator = input_generator(data, batch_size, num_steps)
+		generator = input_generator(data, batch_size, num_steps)
+		self.epoch_size = generator.epoch_size
+		self.generator = generator.gen
 
 	def get_batch(self):
 		return next(self.generator)
@@ -220,8 +236,7 @@ def eval_last_word(session, model, input_data, summary_writer=None):
 
 	start_time = time.time()
 
-	epoch_size = math.ceil(5153/input_data.batch_size)
-	for step in range(epoch_size):
+	for step in range(input_data.epoch_size):
 		input_x, input_y = input_data.get_batch()
 		batch_size = input_x.shape[0]
 		feed_dict = {
