@@ -117,7 +117,7 @@ with tf.Graph().as_default():
 			# Train epoch variables
 			start_time = time.time()
 			iters = 0
-			state = session.run(model_train.initial_state, {model_train.batch_size: config.batch_size}) # initial state defined in the model
+			state = session.run(model_train.initial_state, {model_train.batch_size: FLAGS.batch_size}) # initial state defined in the model
 
 			fetches = {
 				"cost": model_train.cost,
