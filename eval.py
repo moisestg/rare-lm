@@ -50,7 +50,6 @@ test_data, max_len = dataset.get_test_data(FLAGS.test_path, word2id)
 
 with tf.Graph().as_default():
 	
-	#FLAGS.batch_size = 1 # Necessary for graph construction
 	print("MAX LEN: "+str(max_len))
 	FLAGS.num_steps = max_len
 	test_input = dataset.get_test_batch_generator(config=FLAGS, data=test_data)
@@ -62,7 +61,6 @@ with tf.Graph().as_default():
 	sv = tf.train.Supervisor(logdir=None)
 	with sv.managed_session() as session:
 
-		#saver = tf.train.import_meta_graph("{}.meta".format(FLAGS.model_path))
 		saver.restore(session, FLAGS.model_path)
 		session.run(tf.global_variables())
 

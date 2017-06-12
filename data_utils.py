@@ -34,6 +34,9 @@ def find_max_len(padded_raw_data):
 		id = padded_raw_data.pop(0)
 	return max_len
 
+def relevant_index(row):
+	return max(loc for loc, val in enumerate(row) if val != 0) - 1
+
 
 ## GENERAL (DATA LOADING) ##
 
@@ -183,11 +186,12 @@ def write_summary(summary_writer, current_step, values):
 	new_summ.value.extend(list_values)
 	summary_writer.add_summary(new_summ, current_step)
 
+
 def eval_epoch(session, model, input_data, summary_writer=None):
 	costs = 0.0
 	iters = 0
 	accuracies = []
-	state = session.run(model.initial_state)
+	state = session.run(model.initial_state, {model.epoch_size: input_data.epoch_size})
 
 	fetches = {
 			"cost": model.cost,
@@ -222,6 +226,7 @@ def eval_epoch(session, model, input_data, summary_writer=None):
 
 	return [perplexity , accuracy]
 
+
 def eval_last_word(session, model, input_data, summary_writer=None):
 
 	fetches = {
@@ -231,9 +236,6 @@ def eval_last_word(session, model, input_data, summary_writer=None):
 
 	accuracies = np.array([])
 	losses = np.array([])
-
-	def relevant_index(row):
-		return max(loc for loc, val in enumerate(row) if val != 0) - 1
 
 	start_time = time.time()
 
@@ -258,28 +260,26 @@ def eval_last_word(session, model, input_data, summary_writer=None):
 	perplexity = np.exp(np.mean(losses))
 	accuracy = np.mean(accuracies)  
 
-	if summary_writer is not None:
-		write_summary(summary_writer, tf.contrib.framework.get_or_create_global_step().eval(session), {"perplexity": perplexity, "accuracy": accuracy}) # Write summary (CORPUS-WISE stats)
-
 	print("Eval time:")
 	print(time.time()-start_time)
 
+	if summary_writer is not None:
+		write_summary(summary_writer, tf.contrib.framework.get_or_create_global_step().eval(session), {"perplexity": perplexity, "accuracy": accuracy}) # Write summary (CORPUS-WISE stats)
+
 	return [perplexity, accuracy] 
 
+# TODO: Avoid for loops ?
 def eval_last_word_cache(session, model, input_data, summary_writer=None):
-	
-
-	#state = session.run(model.initial_state)
 
 	fetches = {
 		"outputs": model.outputs,
 		"logits": model.logits,
-		#"loss": model.loss,
-		#"correct_predictions": model.correct_predictions
 	}
 
 	losses = []
 	accuracy = []
+
+	start_time = time.time()
 	
 	for step in range(input_data.epoch_size):
 		input_x, input_y = input_data.get_batch()
@@ -288,70 +288,60 @@ def eval_last_word_cache(session, model, input_data, summary_writer=None):
 			model.input_y : input_y
 		}
 		results = session.run(fetches, feed_dict)
-		rnn_outputs = results["outputs"] # list of np arrays of [1, hidden_size]
-		logits = results["logits"] # np.array of [max_len, vocab_size]
+		rnn_outputs = results["outputs"] # list of "max_len" np arrays of [batch_size, hidden_size]
+		logits = results["logits"] # np.array of [batch_size*max_len, vocab_size]
+		logits = np.reshape(logits, (input_x.shape[0], -1, logits.shape[1])) # [batch_size, max_len, vocab_size]
 
-		inputs = input_x[0]
-		#correct_ids = input_y[0]
-		
-		not_pad = [elem != 0 for elem in inputs] # not pad
-		last_word_index = max(loc for loc, val in enumerate(not_pad) if val == True)
-		relevant_index = last_word_index - 1 # previous word
+		relevant_indexes = np.apply_along_axis(relevant_index, 1, input_x) # [batch_size]
+		last_word_indexes = relevant_indexes + 1
 
 		# PARAMS
-
+		# TODO: Pass them through the FLAGS or smthng
 		theta = 0.3
 		interpol = 0.7
 
 		# Calculate LSTM probabilites manually
-		relevant_logits = logits[relevant_index, :]
-		word_probs = softmax(relevant_logits)
+		relevant_logits = logits[np.arange(len(logits)), relevant_indexes, :] # [batch_size, vocab_size]
+		word_probs = np.apply_along_axis(softmax, 1, relevant_logits) # [batch_size, vocab_size]
 
+		for b in range(input_x.shape[0]): # batch_size		
 
-		# Calculate cache probabilities
-		h_t = rnn_outputs[relevant_index]
-		cache_logits = dict() # key: output word, value: logit
+			# Calculate cache probabilities
+			h_t = rnn_outputs[relevant_indexes[b]][b,:]
+			cache_logits = dict() # key: output word, value: logit
 
-		for i in range(relevant_index): # words previous to the prediction
-			pseudo_logit = np.exp( theta*np.sum(h_t*rnn_outputs[i]) )
-			output_id = inputs[i+1] # or correct_ids[i]
-			if output_id in cache_logits: 
-				cache_logits[output_id] += pseudo_logit
-			else:
-				cache_logits[output_id] = pseudo_logit
+			for i in range(relevant_indexes[b]): # words previous to the prediction
+				pseudo_logit = np.exp( theta*np.sum( h_t*rnn_outputs[i][b,:]) )
+				output_id = input_x[b,:][i+1] # or correct_ids[i]
+				if output_id in cache_logits: 
+					cache_logits[output_id] += pseudo_logit
+				else:
+					cache_logits[output_id] = pseudo_logit
 
-		total_sum = sum(cache_logits.values())
-		cache_probs = [float(val)/float(total_sum) for val in cache_logits.values()]
-		cache_ids = cache_logits.keys()
+			total_sum = sum(cache_logits.values())
+			cache_probs = [float(val)/float(total_sum) for val in cache_logits.values()]
+			cache_ids = cache_logits.keys()
 
-		# Merge word and cache probabilities
-		final_probs = (1-interpol)*np.array(word_probs)
+			# Merge word and cache probabilities
+			final_probs = (1-interpol)*word_probs[b,:]
 
-		for i, output_id in enumerate(cache_ids):
-			final_probs[output_id] += interpol*cache_probs[i]
+			for i, output_id in enumerate(cache_ids):
+				final_probs[output_id] += interpol*cache_probs[i]
 
-		# Calculate loss
-		true_output_id = inputs[last_word_index]
-		loss = -np.log( final_probs[ true_output_id ] )
-		losses.append(loss)
+			# Calculate loss
+			true_output_id = input_x[b, last_word_index]
+			loss = -np.log( final_probs[ true_output_id ] )
+			losses.append(loss)
 
-		# And accuracy
-		predicted_id = np.argmax(final_probs)
-		accuracy.append( predicted_id == true_output_id )
-
-		if(step==0):
-			print(rnn_outputs[0].shape)
-			print(len(rnn_outputs))
-			#print(logits)
-			print(logits.shape)
-
-			print("CHECK")
-			print(len(relevant_logits))
-			print(len(word_probs))
-
+			# And accuracy
+			predicted_id = np.argmax(final_probs)
+			accuracy.append( predicted_id == true_output_id )
 
 	perplexity = np.exp(np.mean(losses))
-	accuracy = np.mean(accuracy)  
+	accuracy = np.mean(accuracy) 
+
+	print("Eval time:")
+	print(time.time()-start_time) 
 
 	if summary_writer is not None:
 		write_summary(summary_writer, tf.contrib.framework.get_or_create_global_step().eval(session), {"perplexity": perplexity, "accuracy": accuracy}) # Write summary (CORPUS-WISE stats)
