@@ -283,9 +283,11 @@ def eval_last_word_cache(session, model, input_data, summary_writer=None):
 	
 	for step in range(input_data.epoch_size):
 		input_x, input_y = input_data.get_batch()
+		batch_size = input_x.shape[0]
 		feed_dict = {
 			model.input_x : input_x,
-			model.input_y : input_y
+			model.input_y : input_y,
+			model.batch_size: batch_size,
 		}
 		results = session.run(fetches, feed_dict)
 		rnn_outputs = results["outputs"] # list of "max_len" np arrays of [batch_size, hidden_size]
@@ -380,7 +382,7 @@ class LambadaDataset(object):
 		return eval_last_word(session, model, input_data, summary_writer)
 
 	def eval_test(self, session, model, input_data, summary_writer=None):
-		return eval_last_word(session, model, input_data, summary_writer)
+		return eval_last_word_cache(session, model, input_data, summary_writer)
 
 
 # PENN TREE BANK (PTB) DATASET
