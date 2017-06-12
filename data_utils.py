@@ -324,14 +324,14 @@ def eval_last_word_cache(session, model, input_data, summary_writer=None):
 			cache_probs = [float(val)/float(total_sum) for val in cache_logits.values()]
 			cache_ids = cache_logits.keys()
 
-			# Merge word and cache probabilities
-			final_probs = (1-interpol)*word_probs[b,:]
+			# Merge word (RNN) and cache probabilities
+			final_probs = (1-interpol)*word_probs[b,:] # [vocab_size]
 
 			for i, output_id in enumerate(cache_ids):
 				final_probs[output_id] += interpol*cache_probs[i]
 
 			# Calculate loss
-			true_output_id = input_x[b, last_word_index]
+			true_output_id = input_x[b, last_word_indexes[b]]
 			loss = -np.log( final_probs[ true_output_id ] )
 			losses.append(loss)
 
