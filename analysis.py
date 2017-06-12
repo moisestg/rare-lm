@@ -1,7 +1,16 @@
-# from stanfordcorenlp import StanfordCoreNLP
-# from collections import Counter
+from pycorenlp import StanfordCoreNLP
 
-# nlp = StanfordCoreNLP("/home/moises/thesis/stanford-corenlp-full-2016-10-31")
+# START THE SERVER: java -mx4g -cp "*" edu.stanford.nlp.pipeline.StanfordCoreNLPServer -port 9000 -timeout 15000
+
+nlp = StanfordCoreNLP("http://localhost:9000")
+
+line="hello my name is moises"
+
+output = nlp.annotate(line, properties={
+	"annotators": "tokenize,ssplit,pos,lemma,ner,parse,mention,coref",
+	"coref.algorithm": "neural",
+	"outputFormat": "json"
+	})
 	
 # # Extract PoS tags (https://www.ling.upenn.edu/courses/Fall_2003/ling001/penn_treebank_pos.html)
 
@@ -21,21 +30,50 @@
 
 
 import nltk
+from nltk.tag import StanfordPOSTagger
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 ## FUNC'S DEFINITION ##
+
+def tokenizer(line):
+	return line.split()
 
 def target_in_context(data):
 	lemma = nltk.wordnet.WordNetLemmatizer()
 	result = np.array([])
 	for line in data:
-		words = line.split()
+		words = tokenizer(line)
 		words = [ lemma.lemmatize(word) for word in words ]
 		context = words[:-1]
 		target = words[-1]
 		result = np.append(result, target in context)
 	return result
+
+def pos_tags(data, lib_path):
+	tagger = StanfordPOSTagger(lib_path+"models/english-caseless-left3words-distsim.tagger", path_to_jar=lib_path+"stanford-postagger-3.7.0.jar")
+	result = np.array([])
+	for line in data:
+		words = tokenizer(line)
+		tags = tagger.tag(words)
+		result = np.append(result, tags[-1][1])
+	return result
+
+def rename_pos(tag):
+	if tag=="NNP" or tag=="NNPS":
+		return "PN"
+	elif tag=="NN" or tag=="NNS":
+		return "CN"
+	elif tag=="JJ" or tag=="JJS" or tag=="JJR":
+		return "ADJ"
+	elif tag=="VB" or tag=="VBD" or tag=="VBG" or tag=="VBN" or tag=="VBP" or tag=="VBZ":
+		return "V"
+	elif tag=="RB" or tag=="RBS" or tag=="RBR":
+		return "ADV"
+	else:
+		return "O"
+
 
 ## MAIN ##
 
@@ -43,7 +81,7 @@ def target_in_context(data):
 
 test_path = "/home/moises/thesis/lambada/lambada-dataset/lambada_test_plain_text.txt"
 with open(test_path, "r", encoding="utf-8") as f:
-	test_data = f.readlines()	
+	test_data = f.readlines()
 test_data = [*map(str.strip, test_data)]
 
 dev_path = "/home/moises/thesis/lambada/lambada-dataset/lambada_development_plain_text.txt"
@@ -55,12 +93,53 @@ lambada = test_data + dev_data
 
 
 # Target word in context or not
+
 test_context = target_in_context(test_data)
 np.save("test_context", test_context)
 
+# Target word PoS tag (https://www.ling.upenn.edu/courses/Fall_2003/ling001/penn_treebank_pos.html)
 
-# Target word PoS tag
+test_pos = pos_tags(test_data, "/home/moises/thesis/stanford-postagger-full-2016-10-31/")
+test_pos = np.array([*map(rename_pos, test_pos)])
+fd = nltk.FreqDist(test_pos)
+fd.tabulate()
+np.save("test_pos", test_pos)
 
 
 # Coreference distance (if any)
+
+
+
+# PLOTS
+
+def autolabel(rects, ax):
+	"""
+	Attach a text label above each bar displaying its height
+	"""
+	for rect in rects:
+		height = rect.get_height()
+		ax.text(rect.get_x() + rect.get_width()/2, 1.005*height, '%.2f' % height, ha='center', va='bottom')
+
+def split_categories_plot(perp, acc, labels):
+	# Group results
+	perp_dict = {}
+	acc_dict = {}
+	for label in set(labels):
+		perp_dict[label] = np.exp(np.mean( [val for i, val in enumerate(perp) if labels[i]==label] ))
+		acc_dict[label] = np.mean( [val for i, val in enumerate(acc) if labels[i]==label] )
+	perp_indexes = np.argsort(list(perp_dict.values()))[::-1]
+	perp_vals = np.array(list(perp_dict.values()))[perp_indexes]
+	perp_labels = np.array(list(perp_dict.keys()))[perp_indexes]
+	# Generate plots
+	ind = np.arange(len(perp_vals))  # the x locations for the groups
+	width = 0.35 
+	fig, ax = plt.subplots()
+	rects = ax.bar(ind, perp_vals, width, color='b')
+	# add some text for labels, title and axes ticks
+	ax.set_ylabel('Perplexity')
+	ax.set_title('Perplexity by PoS tag of target word')
+	ax.set_xticks(ind) #  + width / 2
+	ax.set_xticklabels(perp_labels)
+	autolabel(rects, ax)
+	plt.show()
 
