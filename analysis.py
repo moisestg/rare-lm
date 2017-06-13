@@ -118,7 +118,7 @@ if __name__ == "__main__":
 	np.save("test_context", test_context)
 
 	# Target word PoS tag (https://www.ling.upenn.edu/courses/Fall_2003/ling001/penn_treebank_pos.html)
-
+	# PN: 44.07%, CN: 40.99%, V: 7.47%, ADJ: 5.12%, ADV: 1.36%, O: 0.9%
 	test_pos = pos_tags(test_data, "/home/moises/thesis/stanford-postagger-full-2016-10-31/")
 	test_pos = np.array([*map(rename_pos, test_pos)])
 	fd = nltk.FreqDist(test_pos)

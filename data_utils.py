@@ -276,8 +276,8 @@ def eval_last_word_cache(session, model, input_data, summary_writer=None):
 		"logits": model.logits,
 	}
 
-	losses = []
-	accuracy = []
+	accuracies = np.array([])
+	losses = np.array([])
 
 	start_time = time.time()
 	
@@ -333,14 +333,14 @@ def eval_last_word_cache(session, model, input_data, summary_writer=None):
 			# Calculate loss
 			true_output_id = input_x[b, last_word_indexes[b]]
 			loss = -np.log( final_probs[ true_output_id ] )
-			losses.append(loss)
+			losses = np.append(losses, loss)
 
 			# And accuracy
 			predicted_id = np.argmax(final_probs)
-			accuracy.append( predicted_id == true_output_id )
+			accuracies = np.append( accuracies, predicted_id == true_output_id )
 
 	perplexity = np.exp(np.mean(losses))
-	accuracy = np.mean(accuracy) 
+	accuracy = np.mean(accuracies) 
 
 	print("Eval time:")
 	print(time.time()-start_time) 
@@ -348,7 +348,7 @@ def eval_last_word_cache(session, model, input_data, summary_writer=None):
 	if summary_writer is not None:
 		write_summary(summary_writer, tf.contrib.framework.get_or_create_global_step().eval(session), {"perplexity": perplexity, "accuracy": accuracy}) # Write summary (CORPUS-WISE stats)
 
-	return [perplexity, accuracy] 
+	return [losses, accuracies] 
 
 ## LAMBADA DATASET
 
