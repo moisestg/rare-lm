@@ -257,8 +257,8 @@ def eval_last_word(session, model, input_data, summary_writer=None):
 		correct_predictions = np.reshape(correct_predictions, (batch_size, -1))
 		accuracies = np.append( accuracies, correct_predictions[np.arange(len(correct_predictions)), relevant_indexes] )
 
-	perplexity = np.exp(np.mean(losses))
-	accuracy = np.mean(accuracies)  
+	#perplexity = np.exp(np.mean(losses))
+	#accuracy = np.mean(accuracies)  
 
 	print("Eval time:")
 	print(time.time()-start_time)
@@ -266,7 +266,7 @@ def eval_last_word(session, model, input_data, summary_writer=None):
 	if summary_writer is not None:
 		write_summary(summary_writer, tf.contrib.framework.get_or_create_global_step().eval(session), {"perplexity": perplexity, "accuracy": accuracy}) # Write summary (CORPUS-WISE stats)
 
-	return [perplexity, accuracy] 
+	return [losses, accuracies] 
 
 # TODO: Avoid for loops ?
 def eval_last_word_cache(session, model, input_data, summary_writer=None):

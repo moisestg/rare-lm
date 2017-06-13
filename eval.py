@@ -1,6 +1,7 @@
 import tensorflow as tf
 from multilayer_lstm import MultilayerLSTM
 import data_utils
+import analysis
 import numpy as np
 
 import time
@@ -65,5 +66,9 @@ with tf.Graph().as_default():
 		session.run(tf.global_variables())
 
 		print("\n\n** Trained model restored from: "+FLAGS.model_path+" **\n")
-		test_perp, test_acc = dataset.eval_test(session, model_test, test_input)
-		print("\n** Test Perplexity: %.3f Test accuracy: %.3f **\n" % (test_perp, test_acc))
+		test_losses, test_accs = dataset.eval_test(session, model_test, test_input)
+		print("\n** Test Perplexity: %.3f Test accuracy: %.3f **\n" % (np.exp(np.mean(test_perp)), np.mean(test_acc)))
+
+		# Plots
+		test_pos = np.load("./analysis/test_pos.npy")
+		analysis.split_categories_plot(test_losses, test_accs, test_pos)

@@ -163,8 +163,8 @@ with tf.Graph().as_default():
 
 				# Eval on dev set
 				if current_step % FLAGS.evaluate_every == 0:
-					valid_perp, valid_acc = dataset.eval_dev(session, model_valid, valid_input, dev_summary_writer)
-					print("\n** Step: %i: Valid Perplexity: %.3f,  Valid Accuracy: %.3f**\n" % (current_step, valid_perp, valid_acc))
+					valid_losses, valid_accs = dataset.eval_dev(session, model_valid, valid_input, dev_summary_writer)
+					print("\n** Step: %i: Valid Perplexity: %.3f,  Valid Accuracy: %.3f**\n" % (current_step, np.exp(np.mean(valid_perp)), np.mean(valid_acc)))
 
 				# Checkpoint model
 				if current_step % FLAGS.checkpoint_every == 0:

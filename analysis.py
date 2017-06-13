@@ -1,34 +1,3 @@
-from pycorenlp import StanfordCoreNLP
-
-# START THE SERVER: java -mx4g -cp "*" edu.stanford.nlp.pipeline.StanfordCoreNLPServer -port 9000 -timeout 15000
-
-nlp = StanfordCoreNLP("http://localhost:9000")
-
-line="hello my name is moises"
-
-output = nlp.annotate(line, properties={
-	"annotators": "tokenize,ssplit,pos,lemma,ner,parse,mention,coref",
-	"coref.algorithm": "neural",
-	"outputFormat": "json"
-	})
-	
-# # Extract PoS tags (https://www.ling.upenn.edu/courses/Fall_2003/ling001/penn_treebank_pos.html)
-
-# def get_pos_distribution(file_path):
-# 	pos = []
-# 	with open(file_path, "r", encoding="utf-8") as f:
-# 		for line in f:
-# 			print(nlp.pos_tag(line)[-1])
-# 			pos.append( nlp.pos_tag(line)[-1][1] )
-# 	return Counter(pos)
-
-# test_pos = get_pos_distribution("/home/moises/thesis/lambada/lambada-dataset/lambada_test_plain_text.txt")
-
-# dev_pos = get_pos_distribution("/home/moises/thesis/lambada/lambada-dataset/lambada_development_plain_text.txt")
-
-# NOTE: Everything is lowercased so I won't get Proper Nouns :( 
-
-
 import nltk
 from nltk.tag import StanfordPOSTagger
 import numpy as np
@@ -75,41 +44,6 @@ def rename_pos(tag):
 		return "O"
 
 
-## MAIN ##
-
-# Load data
-
-test_path = "/home/moises/thesis/lambada/lambada-dataset/lambada_test_plain_text.txt"
-with open(test_path, "r", encoding="utf-8") as f:
-	test_data = f.readlines()
-test_data = [*map(str.strip, test_data)]
-
-dev_path = "/home/moises/thesis/lambada/lambada-dataset/lambada_development_plain_text.txt"
-with open(dev_path, "r", encoding="utf-8") as f:
-	dev_data = f.readlines()
-dev_data = [*map(str.strip, dev_data)]
-
-lambada = test_data + dev_data
-
-
-# Target word in context or not
-
-test_context = target_in_context(test_data)
-np.save("test_context", test_context)
-
-# Target word PoS tag (https://www.ling.upenn.edu/courses/Fall_2003/ling001/penn_treebank_pos.html)
-
-test_pos = pos_tags(test_data, "/home/moises/thesis/stanford-postagger-full-2016-10-31/")
-test_pos = np.array([*map(rename_pos, test_pos)])
-fd = nltk.FreqDist(test_pos)
-fd.tabulate()
-np.save("test_pos", test_pos)
-
-
-# Coreference distance (if any)
-
-
-
 # PLOTS
 
 def autolabel(rects, ax):
@@ -126,20 +60,98 @@ def split_categories_plot(perp, acc, labels):
 	acc_dict = {}
 	for label in set(labels):
 		perp_dict[label] = np.exp(np.mean( [val for i, val in enumerate(perp) if labels[i]==label] ))
-		acc_dict[label] = np.mean( [val for i, val in enumerate(acc) if labels[i]==label] )
+		acc_dict[label] = 100*np.mean( [val for i, val in enumerate(acc) if labels[i]==label] )	
 	perp_indexes = np.argsort(list(perp_dict.values()))[::-1]
 	perp_vals = np.array(list(perp_dict.values()))[perp_indexes]
 	perp_labels = np.array(list(perp_dict.keys()))[perp_indexes]
+	acc_indexes = np.argsort(list(acc_dict.values()))[::-1]
+	acc_vals = np.array(list(acc_dict.values()))[acc_indexes]
+	acc_labels = np.array(list(acc_dict.keys()))[acc_indexes]
 	# Generate plots
 	ind = np.arange(len(perp_vals))  # the x locations for the groups
 	width = 0.35 
 	fig, ax = plt.subplots()
-	rects = ax.bar(ind, perp_vals, width, color='b')
+	rects = ax.bar(ind, perp_vals, width, color='b')	
 	# add some text for labels, title and axes ticks
 	ax.set_ylabel('Perplexity')
-	ax.set_title('Perplexity by PoS tag of target word')
+	ax.set_title('Perplexity')
 	ax.set_xticks(ind) #  + width / 2
 	ax.set_xticklabels(perp_labels)
 	autolabel(rects, ax)
 	plt.show()
+	# other plot
+	fig, ax = plt.subplots()
+	rects = ax.bar(ind, acc_vals, width, color='r')
+	ax.set_ylabel('Accuracy (%)')
+	ax.set_title('Accuracy')
+	ax.set_xticks(ind) #  + width / 2
+	ax.set_xticklabels(acc_labels)
+	autolabel(rects, ax)
+	plt.show()
 
+
+
+## MAIN ##
+
+if __name__ == "__main__":
+
+	# Load data
+
+	test_path = "/home/moises/thesis/lambada/lambada-dataset/lambada_test_plain_text.txt"
+	with open(test_path, "r", encoding="utf-8") as f:
+		test_data = f.readlines()
+	test_data = [*map(str.strip, test_data)]
+
+	dev_path = "/home/moises/thesis/lambada/lambada-dataset/lambada_development_plain_text.txt"
+	with open(dev_path, "r", encoding="utf-8") as f:
+		dev_data = f.readlines()
+	dev_data = [*map(str.strip, dev_data)]
+
+	lambada = test_data + dev_data
+
+
+	# Target word in context or not
+
+	test_context = target_in_context(test_data)
+	np.save("test_context", test_context)
+
+	# Target word PoS tag (https://www.ling.upenn.edu/courses/Fall_2003/ling001/penn_treebank_pos.html)
+
+	test_pos = pos_tags(test_data, "/home/moises/thesis/stanford-postagger-full-2016-10-31/")
+	test_pos = np.array([*map(rename_pos, test_pos)])
+	fd = nltk.FreqDist(test_pos)
+	fd.tabulate()
+	np.save("test_pos", test_pos)
+
+
+	# Coreference distance (if any)
+
+	# --- WORK IN PROGRESS ---
+
+	# from pycorenlp import StanfordCoreNLP
+
+	# # START THE SERVER: java -mx4g -cp "*" edu.stanford.nlp.pipeline.StanfordCoreNLPServer -port 9000 -timeout 15000
+
+	# nlp = StanfordCoreNLP("http://localhost:9000")
+
+	# line="hello my name is moises"
+
+	# output = nlp.annotate(line, properties={
+	# 	"annotators": "tokenize,ssplit,pos,lemma,ner,parse,mention,coref",
+	# 	"coref.algorithm": "neural",
+	# 	"outputFormat": "json"
+	# 	})
+		
+	# # Extract PoS tags (https://www.ling.upenn.edu/courses/Fall_2003/ling001/penn_treebank_pos.html)
+
+	# def get_pos_distribution(file_path):
+	# 	pos = []
+	# 	with open(file_path, "r", encoding="utf-8") as f:
+	# 		for line in f:
+	# 			print(nlp.pos_tag(line)[-1])
+	# 			pos.append( nlp.pos_tag(line)[-1][1] )
+	# 	return Counter(pos)
+
+	# test_pos = get_pos_distribution("/home/moises/thesis/lambada/lambada-dataset/lambada_test_plain_text.txt")
+
+	# dev_pos = get_pos_distribution("/home/moises/thesis/lambada/lambada-dataset/lambada_development_plain_text.txt")
