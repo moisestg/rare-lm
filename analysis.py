@@ -17,7 +17,7 @@ def target_in_context(data):
 		words = [ lemma.lemmatize(word) for word in words ]
 		context = words[:-1]
 		target = words[-1]
-		result = np.append(result, target in context)
+		result = np.append(result, "Y" if target in context else "N")
 	return result
 
 def pos_tags(data, lib_path):
@@ -111,8 +111,10 @@ if __name__ == "__main__":
 
 
 	# Target word in context or not
-
+	# Yes: 84.67%, No: 15.33% (out of a total of 5153 examples)
 	test_context = target_in_context(test_data)
+	fd = nltk.FreqDist(test_context)
+	fd.tabulate()
 	np.save("test_context", test_context)
 
 	# Target word PoS tag (https://www.ling.upenn.edu/courses/Fall_2003/ling001/penn_treebank_pos.html)

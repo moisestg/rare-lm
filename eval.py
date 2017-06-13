@@ -67,8 +67,9 @@ with tf.Graph().as_default():
 
 		print("\n\n** Trained model restored from: "+FLAGS.model_path+" **\n")
 		test_losses, test_accs = dataset.eval_test(session, model_test, test_input)
-		print("\n** Test Perplexity: %.3f Test accuracy: %.3f **\n" % (np.exp(np.mean(test_losses)), np.mean(test_accs)))
+		#print("\n** Test Perplexity: %.3f Test accuracy: %.3f **\n" % (np.exp(np.mean(test_losses)), np.mean(test_accs)))
+		print("\n** Test Perplexity: %.3f Test accuracy: %.3f **\n" % (test_losses, test_accs))
 
 		# Plots
-		test_pos = np.load("./analysis/test_pos.npy")
-		analysis.split_categories_plot(test_losses, test_accs, test_pos)
+		#test_pos = np.load("./analysis/test_pos.npy")
+		#analysis.split_categories_plot(test_losses, test_accs, test_pos)

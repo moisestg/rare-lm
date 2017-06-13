@@ -277,7 +277,7 @@ def eval_last_word_cache(session, model, input_data, summary_writer=None):
 	}
 
 	losses = []
-	accuracies = []
+	accuracy = []
 
 	start_time = time.time()
 	
@@ -337,10 +337,10 @@ def eval_last_word_cache(session, model, input_data, summary_writer=None):
 
 			# And accuracy
 			predicted_id = np.argmax(final_probs)
-			accuracies.append( predicted_id == true_output_id )
+			accuracy.append( predicted_id == true_output_id )
 
 	perplexity = np.exp(np.mean(losses))
-	accuracy = np.mean(accuracies) 
+	accuracy = np.mean(accuracy) 
 
 	print("Eval time:")
 	print(time.time()-start_time) 
@@ -348,7 +348,7 @@ def eval_last_word_cache(session, model, input_data, summary_writer=None):
 	if summary_writer is not None:
 		write_summary(summary_writer, tf.contrib.framework.get_or_create_global_step().eval(session), {"perplexity": perplexity, "accuracy": accuracy}) # Write summary (CORPUS-WISE stats)
 
-	return [perplexity, accuracies] 
+	return [perplexity, accuracy] 
 
 ## LAMBADA DATASET
 
@@ -382,7 +382,7 @@ class LambadaDataset(object):
 		return eval_last_word(session, model, input_data, summary_writer)
 
 	def eval_test(self, session, model, input_data, summary_writer=None):
-		return eval_last_word_cache(session, model, input_data, summary_writer)
+		return eval_last_word(session, model, input_data, summary_writer)
 
 
 # PENN TREE BANK (PTB) DATASET
