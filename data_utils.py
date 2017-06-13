@@ -382,7 +382,7 @@ class LambadaDataset(object):
 		return eval_last_word(session, model, input_data, summary_writer)
 
 	def eval_test(self, session, model, input_data, summary_writer=None):
-		return eval_last_word_cache(session, model, input_data, summary_writer)
+		return eval_last_word(session, model, input_data, summary_writer)
 
 
 # PENN TREE BANK (PTB) DATASET
