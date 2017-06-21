@@ -1,23 +1,23 @@
-# LSTM
-1 layer, 512 hidden size, 1 epoch  
-All perplexity and accuracy results are computed on lambada_test  
-Perplexity: , Accuracy:  
+# LSTM + CONTINUOUS CACHE 
+1 layer, 512 hidden size, 1 epoch + theta = 0.3, lambda (linear interpolation) = 0.7  
+All perplexity and accuracy results are computed on lambada_test
+Perplexity: 241.813, Accuracy: 0.2 %  
 
 ### Target word PoS tag
 
 |  PN  |  CN  | V   | ADJ | ADV | O  |
 |:----:|:----:|-----|-----|-----|----|
-| 2248 | 2215 | 367 | 222 | 66  | 35 | 
+| 2248 | 2215 | 367 | 222 | 66  | 35 |
 
 ![perp_pos](perp_pos.png)
 
 ![perp_pos](acc_pos.png)
 
-### Target word appears in the context
+### Target word (or its lemma) appears in the context
 
 |  Yes |  No |
 |:----:|:---:|
-| 4363 | 790 | 
+| 4363 | 790 |
 
 ![perp_context](perp_context.png)
 
@@ -27,7 +27,7 @@ Perplexity: , Accuracy:
 
 |  No | [1,10] | (10,20] | (20,30] | (30,40] | (40,50] | (50,60] | (60,70] | (70,80] | +80 |
 |:---:|:------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:---:|
-| 790 |   13   |   504   |   678   |   797   |   863   |   728   |   461   |   189   |  69 | 
+| 790 |   13   |   504   |   678   |   797   |   863   |   728   |   461   |   189   |  69 |
 
 ![perp_distance](perp_distance.png)
 
