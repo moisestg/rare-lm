@@ -2,6 +2,7 @@ import nltk
 from nltk.tag import StanfordPOSTagger
 import numpy as np
 import matplotlib.pyplot as plt
+from pycorenlp import StanfordCoreNLP
 
 
 ## FUNC'S DEFINITION ##
@@ -11,23 +12,57 @@ def tokenizer(line):
 
 def target_in_context(data):
 	lemma = nltk.wordnet.WordNetLemmatizer()
-	result = np.array([])
+	mention = np.array([])
+	distance = np.array([])
+	repetition = np.array([])
 	for line in data:
 		words = tokenizer(line)
 		words = [ lemma.lemmatize(word) for word in words ]
-		context = words[:-1]
+		context = np.array(words[:-1])
 		target = words[-1]
-		result = np.append(result, "Y" if target in context else "N")
-	return result
+		mention = np.append(mention, "Y" if target in context else "N")
+		mention_indexes = np.where(context == target)[0]
+		if len(mention_indexes) == 0: 
+			distance = np.append(distance, -1)
+			repetition = np.append(repetition, -1)
+		else:
+			distance = np.append(distance, np.mean(len(words)-mention_indexes))
+			repetition = np.append(repetition, len(mention_indexes))
+	return [mention, distance, repetition]
 
-def pos_tags(data, lib_path):
-	tagger = StanfordPOSTagger(lib_path+"models/english-caseless-left3words-distsim.tagger", path_to_jar=lib_path+"stanford-postagger-3.7.0.jar")
+def pos_tags(data, lib_path, caseless=False):
+	if caseless:
+		tagger = StanfordPOSTagger(lib_path+"models/english-caseless-left3words-distsim.tagger", path_to_jar=lib_path+"stanford-postagger-3.7.0.jar")
+	else:
+		tagger = StanfordPOSTagger(lib_path+"models/english-bidirectional-distsim.tagger", path_to_jar=lib_path+"stanford-postagger-3.7.0.jar")
 	result = np.array([])
 	for line in data:
 		words = tokenizer(line)
 		tags = tagger.tag(words)
 		result = np.append(result, tags[-1][1])
 	return result
+
+
+# def coref(data):
+# 	# START THE SERVER: java -mx4g -cp "*" edu.stanford.nlp.pipeline.StanfordCoreNLPServer -port 9000 -timeout 15000
+# 	stanford = StanfordCoreNLP("http://localhost:9000")
+# 	for line in data:
+# 		# Determine "position" last word
+# 		splitted = stanford.annotate(line, properties={"annotators": "ssplit", "outputFormat": "json"})
+# 		sentence_num = splitted["sentences"][-1]["index"] + 1 
+# 		word_index = splitted["sentences"][-1]["tokens"][-1]["index"]
+		
+# 		# Find out if the target_word is involved in a coreference chain
+# 		output = stanford.annotate(line, properties={
+# 			"annotators": "tokenize,ssplit,pos,lemma,ner,parse,mention,coref",
+# 			"coref.algorithm": "neural",
+# 			"outputFormat": "json"
+# 		})["corefs"]
+
+# 		for chain_id in output:
+# 			if any(ref["sentNum"] == sentence_num and ref["startIndex"] == word_index for ref in output[chain_id]):
+# 				print(output[chain_id])
+		
 
 def rename_pos(tag):
 	if tag=="NNP" or tag=="NNPS":
@@ -90,70 +125,77 @@ def split_categories_plot(perp, acc, labels):
 	plt.show()
 
 
-
 ## MAIN ##
 
 if __name__ == "__main__":
 
 	# Load data
-
-	test_path = "/home/moises/thesis/lambada/lambada-dataset/lambada_test_plain_text.txt"
+	test_path = "./analysis/lambada_test_data_capitalized_plain_text.txt"
 	with open(test_path, "r", encoding="utf-8") as f:
 		test_data = f.readlines()
 	test_data = [*map(str.strip, test_data)]
 
-	dev_path = "/home/moises/thesis/lambada/lambada-dataset/lambada_development_plain_text.txt"
+	dev_path = "./analysis/lambada_dev_data_capitalized_plain_text.txt"
 	with open(dev_path, "r", encoding="utf-8") as f:
 		dev_data = f.readlines()
 	dev_data = [*map(str.strip, dev_data)]
 
 	lambada = test_data + dev_data
 
-
 	# Target word in context or not
 	# Yes: 84.67%, No: 15.33% (out of a total of 5153 examples)
-	test_context = target_in_context(test_data)
+	test_context, test_distance, test_repetition = target_in_context( [*map(str.lower, test_data)] )
 	fd = nltk.FreqDist(test_context)
 	fd.tabulate()
-	np.save("test_context", test_context)
+
+	# Distance to mention
+	# 41-50 31-40  N  51-60 21-30 11-20 61-70 71-80  +80   1-10 
+    #  863   797  790  728   678   504   461   189    69    13 
+	plt.hist(test_distance, bins=50)
+	plt.show()
+	test_distance_bins = np.array([])	
+	for i, num in enumerate(test_distance):
+		if num == -1:
+			test_distance_bins = np.append(test_distance_bins, "N") 
+		elif 1 <= num and num <= 10:
+			test_distance_bins = np.append(test_distance_bins, "1-10")
+		elif 11 <= num and num <= 20:
+			test_distance_bins = np.append(test_distance_bins, "11-20")
+		elif 21 <= num and num <= 30:
+			test_distance_bins = np.append(test_distance_bins, "21-30")
+		elif 31 <= num and num <= 40:
+			test_distance_bins = np.append(test_distance_bins, "31-40")
+		elif 41 <= num and num <= 50:
+			test_distance_bins = np.append(test_distance_bins, "41-50")
+		elif 51 <= num and num <= 60:
+			test_distance_bins = np.append(test_distance_bins, "51-60")
+		elif 61 <= num and num <= 70:
+			test_distance_bins = np.append(test_distance_bins, "61-70")
+		elif 71 <= num and num <= 80:
+			test_distance_bins = np.append(test_distance_bins, "71-80")
+		elif 80 < num:
+			test_distance_bins = np.append(test_distance_bins, "+80")
+	test_distance = test_distance_bins
+	fd = nltk.FreqDist(test_distance)
+	fd.tabulate()
+
+	# Number of mentions
+	#   1    2    N    3     4    5 
+	# 3367  837  790  135   23    1
+	test_repetition = np.array( ["N" if num == -1 else int(num) for num in test_repetition] )
+	fd = nltk.FreqDist(test_repetition)
+	fd.tabulate()
+
+	np.save("./analysis/test_context", test_context)
+	np.save("./analysis/test_distance", test_distance)
+	np.save("./analysis/test_repetition", test_repetition)
 
 	# Target word PoS tag (https://www.ling.upenn.edu/courses/Fall_2003/ling001/penn_treebank_pos.html)
-	# PN: 44.07%, CN: 40.99%, V: 7.47%, ADJ: 5.12%, ADV: 1.36%, O: 0.9%
-	test_pos = pos_tags(test_data, "/home/moises/thesis/stanford-postagger-full-2016-10-31/")
+	# Capitalized text: PN: 43.62%, CN: 42.98%, V: 7.12%, ADJ: 4.31%, ADV: 1.28%, O: 0.68% (out of a total of 5153 examples)
+	# Caseless text: PN: 44.07%, CN: 40.99%, V: 7.47%, ADJ: 5.12%, ADV: 1.36%, O: 0.9% (out of a total of 5153 examples)
+	test_pos = pos_tags(test_data, "/home/moises/thesis/stanford-postagger-full-2016-10-31/", caseless=False)
 	test_pos = np.array([*map(rename_pos, test_pos)])
 	fd = nltk.FreqDist(test_pos)
 	fd.tabulate()
-	np.save("test_pos", test_pos)
 
-
-	# Coreference distance (if any)
-
-	# --- WORK IN PROGRESS ---
-
-	# from pycorenlp import StanfordCoreNLP
-
-	# # START THE SERVER: java -mx4g -cp "*" edu.stanford.nlp.pipeline.StanfordCoreNLPServer -port 9000 -timeout 15000
-
-	# nlp = StanfordCoreNLP("http://localhost:9000")
-
-	# line="hello my name is moises"
-
-	# output = nlp.annotate(line, properties={
-	# 	"annotators": "tokenize,ssplit,pos,lemma,ner,parse,mention,coref",
-	# 	"coref.algorithm": "neural",
-	# 	"outputFormat": "json"
-	# 	})
-		
-	# # Extract PoS tags (https://www.ling.upenn.edu/courses/Fall_2003/ling001/penn_treebank_pos.html)
-
-	# def get_pos_distribution(file_path):
-	# 	pos = []
-	# 	with open(file_path, "r", encoding="utf-8") as f:
-	# 		for line in f:
-	# 			print(nlp.pos_tag(line)[-1])
-	# 			pos.append( nlp.pos_tag(line)[-1][1] )
-	# 	return Counter(pos)
-
-	# test_pos = get_pos_distribution("/home/moises/thesis/lambada/lambada-dataset/lambada_test_plain_text.txt")
-
-	# dev_pos = get_pos_distribution("/home/moises/thesis/lambada/lambada-dataset/lambada_development_plain_text.txt")
+	np.save("./analysis/test_pos", test_pos)
