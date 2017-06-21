@@ -30,8 +30,9 @@ tf.flags.DEFINE_float("learning_rate_decay", 0.5, "Decay (per epoch) of the lear
 tf.flags.DEFINE_float("keep_prob", 1.0, "Dropout output keep probability")
 tf.flags.DEFINE_float("clip_norm", 5.0, "Norm value to clip the gradients")
 
-# Training parameters
+# Eval parameters
 tf.flags.DEFINE_integer("batch_size", 128, "Batch size")
+tf.flags.DEFINE_boolean("plots", True, "Plot results splitted by categories")
 
 FLAGS = tf.flags.FLAGS
 FLAGS._parse_flags()
@@ -70,7 +71,12 @@ with tf.Graph().as_default():
 		print("\n** Test Perplexity: %.3f Test accuracy: %.3f **\n" % (np.exp(np.mean(test_losses)), np.mean(test_accs)))
 
 		# Plots
-		test_pos = np.load("./analysis/test_pos.npy")
-		test_context = np.load("./analysis/test_context.npy")
-		analysis.split_categories_plot(test_losses, test_accs, test_pos)
-		analysis.split_categories_plot(test_losses, test_accs, test_context)
+		if(FLAGS.plots):
+			test_pos = np.load("./analysis/test_pos.npy")
+			test_context = np.load("./analysis/test_context.npy")
+			test_distance = np.load("./analysis/test_distance.npy")
+			test_repetition = np.load("./analysis/test_repetition.npy")
+			analysis.split_categories_plot(test_losses, test_accs, test_pos)
+			analysis.split_categories_plot(test_losses, test_accs, test_context)
+			analysis.split_categories_plot(test_losses, test_accs, test_distance)
+			analysis.split_categories_plot(test_losses, test_accs, test_repetition)
