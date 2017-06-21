@@ -1,0 +1,162 @@
+\documentclass[a4paper,10pt]{article}
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{todonotes}
+\usepackage{hyperref}
+\usepackage{pgfplots}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{placeins}
+\usepackage{tikz}
+\usepackage{pgfplotstable}
+\usepackage{placeins}
+\usepackage{bm}
+\usetikzlibrary{positioning,arrows,shapes.geometric,calc}
+\usepgfplotslibrary{statistics}
+
+\definecolor{rosso}{RGB}{220,57,18}
+\definecolor{giallo}{RGB}{255,153,0}
+\definecolor{blu}{RGB}{102,140,217}
+\definecolor{verde}{RGB}{16,150,24}
+\definecolor{viola}{RGB}{153,0,153}
+\definecolor{babyblue}{RGB}{0,129,255}
+\definecolor{darkgreen}{RGB}{6,148,60}
+
+\newcommand\argmax[1]{\underset{#1}{\operatorname{{argmax}}}}
+\newcommand\bfeta{{\pmb\eta}}
+
+\newcommand\Perp{\operatorname{\mathrm{Perp}}}
+\newcommand\BLEU{\operatorname{\mathrm{BLEU}}}
+\newcommand\softmax[1]{\underset{#1}{\operatorname{{softmax}}}}
+\newcommand\enc{\operatorname{enc}_\theta}
+\newcommand\ngramset{\operatorname{Ngram}}
+\newcommand\score{\operatorname{score}}
+
+\newcommand\ngram{$n$-gram}
+\newcommand\h{\mathbf h}
+\newcommand\y{\mathbf y}
+\newcommand\bftheta{{\bm\theta}}
+\newcommand\E{\mathbb E}
+\newcommand\onetot{1\dots t}
+\newcommand\onetoT{1\dots T}
+
+\newcommand\ijs{{\langle i\dots j\rangle}}
+\newcommand{\rpm}{\raisebox{.2ex}{$\scriptstyle\pm$}}
+
+\newcommand\name{\text{name}}
+\newcommand\noname{\text{noname}}
+
+
+
+
+\title{Broad Discourse Context for Language Modeling}
+\author{Florian Schmidt}
+
+
+
+\begin{document}
+\maketitle
+The purpose of this document is to agree on a general methodology for the hard word prediction task. Most likely we will always be in between two extremes: A general approach on the one hand that makes predicting hard words easier. Unless this goes at the cost of predicting non-hard words, this is a challenging task as it simply means that we improve on the decades-old task of language modeling. On the other hand, there are very specialized models focusing on a tiny aspect of the original problem that might not contribute too much to the overall perplexity of the model. We should not hesitate to look into very specific problems of the latter kind, but we should make very clear at all times which problem we are tackling and why the data we are using is an appropriate test for our models with respect to that problem.
+\section{LAMBADA dataset}
+The LAMBADA dataset will be central to this work. Still, we want to point out several biases present in the dataset:
+\begin{enumerate}
+	\item A large portion of gap words are names.
+	\item Almost all (around 85 percent) gap words do appear in the passage before.
+\end{enumerate}
+This is subject to the investigations Moises is currently conducting.
+\section{Strategy}
+A possible strategy could be to iterate the following steps:
+\begin{enumerate}
+	\item Identify a property (of the gap words) in the LAMBADA dataset.
+	\item Create a new dataset in which this problem is very prominent. 
+	\item Design a model focussing on this property, train it on the new dataset, evaluate its effectiveness on this dataset.
+	\item Go back to LAMBADA and test on it to see if we are doing better.
+	\item It would be valid to repeat the training with a mixed corpus (or objective), consisting of the new dataset and the LAMBADA training data. This should give us the best results on LAMBADA.
+\end{enumerate}
+When coming up with alternative corpora, we are facing a challenge. We do want to stay within the book domain, which I guess means we stick to the Books dataset that LAMBADA is based on (it is only a tiny subset). That means we will always need to filter out the LAMBADA test data and ideally even all (training/dev/test) LAMBADA data. @Moises can you check whether we can get access to the original Books corpus? I only have a sentence-shuffled lower-cased version.
+
+\section{Understanding the Problem}
+In addition to the running experiments, it would be nice to -- manually -- investigate the following:
+\begin{itemize}
+	\item To understand the nature of hard words ``in the wild", train a model on Books and compute the per-negative-log-likelihood (effectively the per-word contributions to the perplexity). Now output some sentences with a hard word (e.g. $-\log p(w)>20$ or similar) and investigate the sentences. The output might look like
+	$$\textit{This$/8.2$ is$/4.1$ a$/3.5$ huge$/5.2$ surprise$/23.2$}$$ 
+	This is essentially the data creation procedure of LAMBADA without the human in the pipeline. How many names to we get as ``gaps"? How big is the bias really? 
+	\item For a reasonably trained simple baseline e.g.\ LSTM model, output pairs consisting of a gap word and the top-$k$ list of predictions made by the model for that word. Do the guesses share at least the right PoS tag with the gap word? If the gap word is a name, do we predict (different) names?
+	
+	Note that these lists might look terribly even for non-hard words. Maybe do the same for some words with low perplexity as a sanity check. LMs rarely predict the right word even if perplexity is low.
+\end{itemize}
+
+\section{Approaches}
+\subsection{Continuous Cache Approach}
+Since we have implemented and discussed this already, let's look at this model in some detail as a start. Define an RNN so that word $w_t$ is predicted from $\h_t$. The continuous cache approach \cite{grave16} stores pairs $(\h_t, w_t)$ in a cache and defines a cache word distribution as 
+\begin{align}
+	p_\text{cache}(w|\h_t)\propto\sum_{i=1}^{t-1}\mathbb I\lbrace w=w_i\rbrace\exp(\theta \langle \h_t,\h_i\rangle)
+\end{align}
+which is linearly mixed into the recurrent next-word soft-max prediction distribution. The intuition is simple: If we revisit $\h_t$ at some time $t'>t$ (that means $\h_t\approx \h_{t'}$) , then we should probably predict $w_t$ again.
+
+\paragraph{Criticism}
+\begin{itemize}
+	\item They don't give any evidence why the power of their model (if any) wouldn't solely reside in the (very much not continuous) nature of the $w=w_i$. In other words, where is the comparison to a baseline with $\theta=0$? 
+	\item Furthermore, if the hidden state similarity is meaningful, why don't they present an approach with $\exp (\theta\h_t^\top{\bm W}\h_i)$ (I am sure they tried)?
+	\item Note that for any $(\h_t, w_t)$ in the cache, there is no guarantee that $P(w_t|\h_t)$  was particularly high. In other words, $\h_t$ might not be a place in which $w_t$ is particularly likely, so why would predicting $w_t$ when revisiting it be a good strategy? The authors hide this elegantly by introducing $\theta$ which puts strength on any last word which might be a sensible strategy (see point one).	
+\end{itemize}
+
+\subsection{The Topic-Modeling Direction}
+Our goal would be to train a topic model and a language model jointly. The work of \cite{fu16} would be the prototypical example. Somehow google scholar does not list any citing papers. I don't buy that. Do \cite{liu08} train both jointly?
+
+In general I would suspect that the context in lambada does not have too many topic changes, ideally even none at all. However, if the topic is inferred and triggers a certain bias at the word-level distributions, this might be interesting. \cite{qiang16} sounds very relevant judging by the title (any citations of this?).
+
+\subsection{Latent Recurrent Models}
+Latent recurrent sequential models have a long history in text models (think HMMs). Training them is different from topic-models as they do not assume a document structure. While there is traditionally one latent variable per word, there are versions that have one per sentence e.g.\cite{ji16} \cite{zhang16}. Can this server as a per-sentence-topic-annotation? Current approaches include \cite{bayer2014learning} \cite{fraccaro2016} \cite{chungKDGCB15}
+
+These models form a building block of the current hot topic of conversational agent as they can ``bridge" the context when generating several sentences/responses. We should be interested in a similar bridging\footnote{Talking about bridging, machine translation faces a similar problem and recently this appeared: \cite{wang17}} functionality. \cite{serban16} is seminal work in this field.\\
+
+Where there are latent variables, there must be inference. Most approaches nowadays do not use EM algorithms but variational inferences with posteriors powered by neural networks. This is true for almost all approaches mentioned above. If that task is reasonable simple or the model reasonable standard, we should not hesitate to dive into this direction. It's by far the most popular one.\\
+
+There are also RNN-free continuous state space models \cite{krishnan16} but I would want to see this applied somewhere else to LM before looking into it.
+
+\section{Proposal for Something Initial}
+Let's say that many gap words in LAMBADA are names and that we can easily generate a larger corpus from Books that contains many annotated names by running an NER system on it (and possibly filtering using a list of common names).
+
+We can propose a simple name-slot-aware system that predicts words as:
+\begin{align}
+	P(w_t|\h_t)=\sum_{c\in\mathcal C}P(w_t, c|\h_t)=\sum_{c\in\mathcal C}P(w_t|c, \h_t)P(c|\h_t)
+\end{align}
+where $\mathcal C=\lbrace\name, \noname \rbrace$ is for now a binary classification that identifies a word as a name-slot or not. That means we can write
+\begin{align}
+	P(w_t|\h_t)=P(w_t|\name, \h_t)P(\name|\h_t) + P(w_t|\noname, \h_t)(1 - P(\name|\h_t))
+\end{align}
+where $P(\name|\h_t)$ is a binary ``name-slot-predictor", $P(w_t|\noname, \h_t)$ is our usual RNN and $P(w_t|\name, \h_t)$ is a distribution we an design. Note that we do not need variational inference yet to predict $P(\name|\h_t)$ as we can simply add a second supervised term to the objective
+\begin{align}
+	\mathcal L&=\mathcal L^\text{LM}(\theta,\xi) + \lambda\mathcal L(\xi)\\
+	&=\mathcal L^\text{LM}(\theta,\xi) + \lambda H[P_\text{data}(c), P(c|\h_t)]
+\end{align}
+where $\xi$ is the parametrization of the name predictor.
+\paragraph{Architecture}
+A simple instantiation of this model could look like this:
+\begin{itemize}
+	\item For $P(\name|\h_t)$ simply use the hidden state with a fully connected (FC) layer and a two-class softmax.
+	\item For $P(w_t|\name, \h_t)$ the choice is less obvious. We can simply collect all names in the training data and use an uniform distribution. This is learning-free. Alternatively, we use a second FC+softmax-layer. This is computationally expensive but unsupervised. 
+	
+	Do we need an addition term in the objective that forces $P(w_t|\name, \h_t)$ to predict names? I hope not\dots
+\end{itemize}
+
+\paragraph{A Comment on DL Practice}
+The usual procedure for doing this might be an attention function at the hidden-state level. That means, we define a new hidden state
+\begin{align}
+	\tilde\h_t&=\gamma(\h_t)\h_t + (1-\gamma(\h_t))\h_\name\\
+	\gamma(\h_t)&=\sigma({\bm\xi}^\top\h_t+b)\in[0,1]
+\end{align}
+where ${\bm\xi}\in\mathbb R^{D_h},b\in\mathbb R$ are parameters and $\gamma$ is essentially $P(\name|\h_t)$ (call it deep-name-attention-mechanism :p). Words are now predicted from $P(w_t|\tilde\h_t)$ as before and we would train $\gamma(\h_t)$ to match the data distribution of names as above.\\
+
+An important difference is that the model can shrink the impact of the name ``distribution" by simply shrinking $\h_\name$ in norm. 
+
+\paragraph{Challenge} There is a practical complification with the probabilistic model above. The cross entropy loss implementations fuse the softmax and the loss because of numerical stability. This is a problem for us, as we don't want to provide logits but probabilities.
+
+\paragraph{Extensions} Maybe this is a blueprint for other similar models with different $\mathcal C$. Is there an entropy reduction when predicting words \emph{knowing the PoS class}? Someone must have tried this. I think in general PoS helps less than one thinks but maybe it is different for hard words\dots
+\bibliographystyle{alpha}
+\bibliography{bibliography}
+
+\end{document}
