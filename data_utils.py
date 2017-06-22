@@ -35,7 +35,7 @@ def find_max_len(padded_raw_data):
 	return max_len
 
 def relevant_index(row):
-	return max(loc for loc, val in enumerate(row) if val != 0) - 1
+	return max(loc for loc, val in enumerate(row) if val != 0) - 1 # word previous to last
 
 
 ## GENERAL (DATA LOADING) ##
@@ -265,7 +265,64 @@ def eval_last_word(session, model, input_data, summary_writer=None):
 	if summary_writer is not None:
 		write_summary(summary_writer, tf.contrib.framework.get_or_create_global_step().eval(session), {"perplexity": perplexity, "accuracy": accuracy}) # Write summary (CORPUS-WISE stats)
 
-	return [losses, accuracies] 
+	return [losses, accuracies]
+
+def eval_last_word_detailed(session, model, input_data, id2word, pos):
+
+	fetches = {
+			"loss": model.loss,
+			"correct_predictions": model.correct_predictions,
+			"logits": model.logits,
+	}
+
+	accuracies = np.array([])
+	losses = np.array([])
+
+	start_time = time.time()
+
+	example_count = 0cost
+	for step in range(input_data.epoch_size):
+		input_x, input_y = input_data.get_batch()
+		batch_size = input_x.shape[0]
+		feed_dict = {
+			model.input_x : input_x,
+			model.input_y : input_y,
+			model.batch_size: batch_size,
+		}
+		results = session.run(fetches, feed_dict)
+		loss = results["loss"]
+		correct_predictions = results["correct_predictions"]
+		
+		relevant_indexes = np.apply_along_axis(relevant_index, 1, input_x)
+		loss = np.reshape(loss, (batch_size, -1))
+		losses = np.append( losses, loss[np.arange(len(loss)), relevant_indexes] )
+		correct_predictions = np.reshape(correct_predictions, (batch_size, -1))
+		accuracies = np.append( accuracies, correct_predictions[np.arange(len(correct_predictions)), relevant_indexes] )
+
+		# DETAILED STUFF PER EXAMPLE
+		logits = results["logits"] # np.array of [batch_size*max_len, vocab_size]
+		logits = np.reshape(logits, (input_x.shape[0], -1, logits.shape[1])) # [batch_size, max_len, vocab_size]
+
+		with open("detailed_output_"+str(start_time)+".txt", "a") as f:
+			for b in range(batch_size):
+				f.write("* EXAMPLE "+str(example_count)+" :\n")
+				f.write("Target word: "+id2word[ input_y[b, relevant_indexes[b]] ]+" | PoS tag: "+pos[example_count]+"\n")
+				# Top k predictions
+				relevant_logits = logits[b, relevant_indexes[b], :] # [vocab_size]
+				topk_indexes = np.argpartition(relevant_logits, -10)[-10:]
+				topk_indexes = topk_indexes[np.argsort(relevant_logits[topk_indexes])]
+				f.write("Top 10 predictions:")
+				for index in topk_indexes:
+					f.write(" "+id2word[index])
+				example_count += 1
+				f.write("\n\n")
+
+	perplexity = np.exp(np.mean(losses))
+	accuracy = np.mean(accuracies)
+	with open("detailed_output_"+str(start_time)+".txt", "a") as f:
+		f.write("Average (target word) perplexity: "+str(perplexity)+"Average (target word) accuracy: "+str(accuracy))
+
+	print("Detailed eval time: "+str(time.time()-start_time)+" s")
 
 # TODO: Avoid for loops ?
 def eval_last_word_cache(session, model, input_data, summary_writer=None):
@@ -381,6 +438,9 @@ class LambadaDataset(object):
 
 	def eval_test(self, session, model, input_data, summary_writer=None):
 		return eval_last_word(session, model, input_data, summary_writer)
+
+	def eval_last_word_detailed(self, session, model, input_data, id2word, pos):
+		return eval_last_word_detailed(session, model, input_data, id2word, pos)
 
 
 # PENN TREE BANK (PTB) DATASET
