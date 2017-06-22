@@ -302,7 +302,9 @@ def eval_last_word_detailed(session, model, input_data, id2word, pos):
 
 		# DETAILED STUFF PER EXAMPLE
 		logits = results["logits"] # np.array of [batch_size*max_len, vocab_size]
+		print(logits.shape)
 		logits = np.reshape(logits, (input_x.shape[0], -1, logits.shape[1])) # [batch_size, max_len, vocab_size]
+		print(logits.shape)
 		vocab_size = logits.shape[1]
 		with open("detailed_output_"+str(start_time)+".txt", "a") as f:
 			for b in range(batch_size):
@@ -319,6 +321,7 @@ def eval_last_word_detailed(session, model, input_data, id2word, pos):
 					f.write(" "+id2word[index])
 				f.write("\n")
 				# Target word rank
+				# TODO: FIX RANK
 				print(vocab_size)
 				print(np.where(ordered_indexes == target_word_id)[0][0])
 				target_word_rank = vocab_size - np.where(ordered_indexes == target_word_id)[0][0]
@@ -338,7 +341,7 @@ def eval_last_word_detailed(session, model, input_data, id2word, pos):
 	perplexity = np.exp(np.mean(losses))
 	accuracy = np.mean(accuracies)
 	rank = np.median(ranks)
-	with open("detailed_output_"+str(start_time)+".txt", "a") as f:
+	with open("detailed_output_"+str(int(start_time))+".txt", "a") as f:
 		f.write("Average (target word) perplexity: "+str(perplexity)+" | Average (target word) accuracy: "+str(accuracy)
 			+" | Median (target word) rank: "+str(rank))
 
@@ -423,7 +426,110 @@ def eval_last_word_cache(session, model, input_data, summary_writer=None):
 	if summary_writer is not None:
 		write_summary(summary_writer, tf.contrib.framework.get_or_create_global_step().eval(session), {"perplexity": perplexity, "accuracy": accuracy}) # Write summary (CORPUS-WISE stats)
 
-	return [losses, accuracies] 
+	return [losses, accuracies]
+
+def eval_last_word_cache_detailed(session, model, input_data, id2word, pos):
+
+	fetches = {
+		"outputs": model.outputs,
+		"logits": model.logits,
+	}
+
+	accuracies = np.array([])
+	losses = np.array([])
+	ranks = np.array([])
+
+	start_time = time.time()
+	
+	example_count = 0
+	for step in range(input_data.epoch_size):
+		input_x, input_y = input_data.get_batch()
+		batch_size = input_x.shape[0]
+		feed_dict = {
+			model.input_x : input_x,
+			model.input_y : input_y,
+			model.batch_size: batch_size,
+		}
+		results = session.run(fetches, feed_dict)
+		rnn_outputs = results["outputs"] # list of "max_len" np arrays of [batch_size, hidden_size]
+		logits = results["logits"] # np.array of [batch_size*max_len, vocab_size]
+		logits = np.reshape(logits, (input_x.shape[0], -1, logits.shape[1])) # [batch_size, max_len, vocab_size]
+
+		relevant_indexes = np.apply_along_axis(relevant_index, 1, input_x) # [batch_size]
+		last_word_indexes = relevant_indexes + 1
+
+		# PARAMS
+		# TODO: Pass them through the FLAGS or smthng
+		theta = 0.3
+		interpol = 0.7
+
+		# Calculate LSTM probabilites manually
+		relevant_logits = logits[np.arange(len(logits)), relevant_indexes, :] # [batch_size, vocab_size]
+		word_probs = np.apply_along_axis(softmax, 1, relevant_logits) # [batch_size, vocab_size]
+
+		# DETAILED STUFF PER EXAMPLE
+		all_word_probs = np.apply_along_axis(softmax, 2, logits) # [batch_size, max_len, vocab_size]
+		for b in range(input_x.shape[0]): # batch_size
+			f.write("* EXAMPLE "+str(example_count)+":\n")
+			# Target word info
+			target_word_id = input_y[b, relevant_indexes[b]]
+			f.write("Target word: "+id2word[ target_word_id ]+" | PoS tag: "+pos[example_count]+"\n")
+			cache_logits = dict() # key: output word, value: logit	
+			# Update all probs by mixing word + cache	
+			for i in range(1, relevant_indexes[b]+2): # +1 ???? until last word
+				# Calculate cache probabilities
+				h_t = rnn_outputs[i][b,:]
+				pseudo_logit = np.exp( theta*np.sum( h_t*rnn_outputs[i-1][b,:]) )
+				output_id = input_x[b,:][i]
+				if output_id in cache_logits: 
+					cache_logits[output_id] += pseudo_logit
+				else:
+					cache_logits[output_id] = pseudo_logit
+
+				total_sum = sum(cache_logits.values())
+				cache_probs = [float(val)/float(total_sum) for val in cache_logits.values()]
+				cache_ids = cache_logits.keys()
+
+				# Merge word (RNN) and cache probabilities
+				all_word_probs[b, i, :] = (1-interpol)*all_word_probs[b, i, :] # [vocab_size]
+				for j, output_id in enumerate(cache_ids):
+					all_word_probs[b, i, output_id] += interpol*cache_probs[j]
+			# Top k predictions
+			relevant_probs = all_word_probs[b, relevant_indexes[b], :] # [vocab_size]
+			ordered_indexes = relevant_probs.argsort() # from less to more
+			topk_indexes = ordered_indexes[-10:]
+			f.write("Top 10 predictions:")
+			for index in topk_indexes:
+				f.write(" "+id2word[index])
+			f.write("\n")
+			# Word perplexities: word/perplexity when predicting that word (the final prediction might have been different than the target)
+			f.write("Word perplexities:\n")
+			for i in range(relevant_indexes[b]+2): # until the last word
+				f.write(id2word[ input_x[b, i] ]) # word
+				if i>0:
+					f.write("/"+str( round(np.exp(-np.log( all_word_probs[b, i-1, target_word_id] )) , 2))+" ")
+				else:
+					f.write(" ")
+			f.write("\n\n")
+			example_count += 1
+
+			# Calculate loss
+			loss = -np.log( all_word_probs[b, relevant_indexes[b], target_word_id] )
+			losses = np.append(losses, loss)
+
+			# And accuracy
+			predicted_id = np.argmax(all_word_probs[b, relevant_indexes[b], :])
+			accuracies = np.append( accuracies, predicted_id == target_word_id )
+
+	perplexity = np.exp(np.mean(losses))
+	accuracy = np.mean(accuracies) 
+	rank = np.median(ranks)
+	with open("detailed_output_"+str(int(start_time))+".txt", "a") as f:
+		f.write("Average (target word) perplexity: "+str(perplexity)+" | Average (target word) accuracy: "+str(accuracy))
+		#	+" | Median (target word) rank: "+str(rank))
+
+	print("Detailed eval time: "+str(time.time()-start_time)+" s") 
+
 
 ## LAMBADA DATASET
 
@@ -459,7 +565,7 @@ class LambadaDataset(object):
 	def eval_test(self, session, model, input_data, summary_writer=None):
 		return eval_last_word(session, model, input_data, summary_writer)
 
-	def eval_last_word_detailed(self, session, model, input_data, id2word, pos):
+	def eval_detailed(self, session, model, input_data, id2word, pos):
 		return eval_last_word_detailed(session, model, input_data, id2word, pos)
 
 
