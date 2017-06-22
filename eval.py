@@ -72,7 +72,7 @@ with tf.Graph().as_default():
 		print("\n** Test Perplexity: %.3f Test accuracy: %.3f **\n" % (np.exp(np.mean(test_losses)), np.mean(test_accs)))
 		"""
 		test_pos = np.load("./analysis/test_pos.npy")
-		dataset.eval_last_word_detailed(session, model_test, test_input, id2word, test_pos)
+		dataset.eval_detailed(session, model_test, test_input, id2word, test_pos)
 		"""
 		# Plots
 		if(FLAGS.plots):
