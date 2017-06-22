@@ -304,7 +304,7 @@ def eval_last_word_detailed(session, model, input_data, id2word, pos):
 		logits = results["logits"] # np.array of [batch_size*max_len, vocab_size]
 		vocab_size = logits.shape[1]
 		logits = np.reshape(logits, (input_x.shape[0], -1, vocab_size)) # [batch_size, max_len, vocab_size]
-		with open("detailed_output_"+str(start_time)+".txt", "a") as f:
+		with open("detailed_output_"+str(int(start_time))+".txt", "a") as f:
 			for b in range(batch_size):
 				f.write("* EXAMPLE "+str(example_count)+":\n")
 				# Target word info
