@@ -280,7 +280,7 @@ def eval_last_word_detailed(session, model, input_data, id2word, pos):
 
 	start_time = time.time()
 
-	example_count = 0cost
+	example_count = 0
 	for step in range(input_data.epoch_size):
 		input_x, input_y = input_data.get_batch()
 		batch_size = input_x.shape[0]
