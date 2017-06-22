@@ -260,8 +260,7 @@ def eval_last_word(session, model, input_data, summary_writer=None):
 	perplexity = np.exp(np.mean(losses))
 	accuracy = np.mean(accuracies)  
 
-	print("Eval time:")
-	print(time.time()-start_time)
+	print("Eval time: "+str(time.time()-start_time)+" s")
 
 	if summary_writer is not None:
 		write_summary(summary_writer, tf.contrib.framework.get_or_create_global_step().eval(session), {"perplexity": perplexity, "accuracy": accuracy}) # Write summary (CORPUS-WISE stats)
@@ -342,8 +341,7 @@ def eval_last_word_cache(session, model, input_data, summary_writer=None):
 	perplexity = np.exp(np.mean(losses))
 	accuracy = np.mean(accuracies) 
 
-	print("Eval time:")
-	print(time.time()-start_time) 
+	print("Eval time: "+str(time.time()-start_time)+" s") 
 
 	if summary_writer is not None:
 		write_summary(summary_writer, tf.contrib.framework.get_or_create_global_step().eval(session), {"perplexity": perplexity, "accuracy": accuracy}) # Write summary (CORPUS-WISE stats)

@@ -3,7 +3,7 @@
 All perplexity and accuracy results are computed on lambada_test  
 Perplexity: , Accuracy:  
 
-### Target word PoS tag
+### Target word (or its lemma) PoS tag
 
 |  PN  |  CN  | V   | ADJ | ADV | O  |
 |:----:|:----:|-----|-----|-----|----|
