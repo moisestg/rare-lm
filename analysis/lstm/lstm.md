@@ -1,7 +1,7 @@
 # LSTM
 1 layer, 512 hidden size, 1 epoch  
 All perplexity and accuracy results are computed on lambada_test  
-Perplexity: , Accuracy:  
+Perplexity: 13059.516, Accuracy: 0.1 %  
 
 ### Target word (or its lemma) PoS tag
 

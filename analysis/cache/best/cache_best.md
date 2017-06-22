@@ -1,7 +1,7 @@
 # LSTM + CONTINUOUS CACHE 
 1 layer, 512 hidden size, 1 epoch + theta = 0.3, lambda (linear interpolation) = 0.7  
 All perplexity and accuracy results are computed on lambada_test  
-Perplexity: 241.813, Accuracy: 0.2 %  
+Perplexity: , Accuracy:  
 
 ### Target word PoS tag
 

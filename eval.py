@@ -73,6 +73,7 @@ with tf.Graph().as_default():
 		"""
 		test_pos = np.load("./analysis/test_pos.npy")
 		dataset.eval_last_word_detailed(session, model_test, test_input, id2word, test_pos)
+		"""
 		# Plots
 		if(FLAGS.plots):
 			test_pos = np.load("./analysis/test_pos.npy")
@@ -83,3 +84,4 @@ with tf.Graph().as_default():
 			analysis.split_categories_plot(test_losses, test_accs, test_context)
 			analysis.split_categories_plot(test_losses, test_accs, test_distance)
 			analysis.split_categories_plot(test_losses, test_accs, test_repetition)
+		"""
