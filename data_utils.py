@@ -277,6 +277,7 @@ def eval_last_word_detailed(session, model, input_data, id2word, pos):
 
 	accuracies = np.array([])
 	losses = np.array([])
+	ranks = np.array([])
 
 	start_time = time.time()
 
@@ -302,25 +303,41 @@ def eval_last_word_detailed(session, model, input_data, id2word, pos):
 		# DETAILED STUFF PER EXAMPLE
 		logits = results["logits"] # np.array of [batch_size*max_len, vocab_size]
 		logits = np.reshape(logits, (input_x.shape[0], -1, logits.shape[1])) # [batch_size, max_len, vocab_size]
-
+		vocab_size = logits.shape[1]
 		with open("detailed_output_"+str(start_time)+".txt", "a") as f:
 			for b in range(batch_size):
-				f.write("* EXAMPLE "+str(example_count)+" :\n")
-				f.write("Target word: "+id2word[ input_y[b, relevant_indexes[b]] ]+" | PoS tag: "+pos[example_count]+"\n")
+				f.write("* EXAMPLE "+str(example_count)+":\n")
+				# Target word info
+				target_word_id = input_y[b, relevant_indexes[b]]
+				f.write("Target word: "+id2word[ target_word_id ]+" | PoS tag: "+pos[example_count]+"\n")
 				# Top k predictions
 				relevant_logits = logits[b, relevant_indexes[b], :] # [vocab_size]
-				topk_indexes = np.argpartition(relevant_logits, -10)[-10:]
-				topk_indexes = topk_indexes[np.argsort(relevant_logits[topk_indexes])]
+				ordered_indexes = relevant_logits.argsort() # from less to more
+				topk_indexes = ordered_indexes[-10:]
 				f.write("Top 10 predictions:")
 				for index in topk_indexes:
 					f.write(" "+id2word[index])
-				example_count += 1
+				# Target word rank
+				target_word_rank = vocab_size - np.where(ordered_indexes == target_word_id)
+				ranks = np.append(ranks, target_word_rank)
+				f.write("Target word rank: "+str(target_word_rank)+"\n")
+				# Word perplexities: word/perplexity when predicting that word (the final prediction might have been different than the target)
+				f.write("Word perplexities:\n")
+				for i in range(relevant_indexes[b]+1): # until the last word
+					f.write(id2word[ input_x[b, i] ]) # word
+					if i>0:
+						f.write("/"+str(np.exp(loss[b, i-1]))+" ")
+					else:
+						f.write(" ")
 				f.write("\n\n")
+				example_count += 1
 
 	perplexity = np.exp(np.mean(losses))
 	accuracy = np.mean(accuracies)
+	rank = np.median(ranks)
 	with open("detailed_output_"+str(start_time)+".txt", "a") as f:
-		f.write("Average (target word) perplexity: "+str(perplexity)+"Average (target word) accuracy: "+str(accuracy))
+		f.write("Average (target word) perplexity: "+str(perplexity)+" | Average (target word) accuracy: "+str(accuracy)
+			+" | Median (target word) rank: "+str(rank))
 
 	print("Detailed eval time: "+str(time.time()-start_time)+" s")
 
