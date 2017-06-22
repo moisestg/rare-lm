@@ -317,16 +317,19 @@ def eval_last_word_detailed(session, model, input_data, id2word, pos):
 				f.write("Top 10 predictions:")
 				for index in topk_indexes:
 					f.write(" "+id2word[index])
+				f.write("\n")
 				# Target word rank
+				print(vocab_size)
+				print(np.where(ordered_indexes == target_word_id)[0][0])
 				target_word_rank = vocab_size - np.where(ordered_indexes == target_word_id)[0][0]
 				ranks = np.append(ranks, target_word_rank)
 				f.write("Target word rank: "+str(target_word_rank)+"\n")
 				# Word perplexities: word/perplexity when predicting that word (the final prediction might have been different than the target)
 				f.write("Word perplexities:\n")
-				for i in range(relevant_indexes[b]+1): # until the last word
+				for i in range(relevant_indexes[b]+2): # until the last word
 					f.write(id2word[ input_x[b, i] ]) # word
 					if i>0:
-						f.write("/"+str(np.exp(loss[b, i-1]))+" ")
+						f.write("/"+str(round(np.exp(loss[b, i-1]), 2))+" ")
 					else:
 						f.write(" ")
 				f.write("\n\n")
