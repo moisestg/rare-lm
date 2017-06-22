@@ -318,7 +318,7 @@ def eval_last_word_detailed(session, model, input_data, id2word, pos):
 				for index in topk_indexes:
 					f.write(" "+id2word[index])
 				# Target word rank
-				target_word_rank = vocab_size - np.where(ordered_indexes == target_word_id)
+				target_word_rank = vocab_size - np.where(ordered_indexes == target_word_id)[0][0]
 				ranks = np.append(ranks, target_word_rank)
 				f.write("Target word rank: "+str(target_word_rank)+"\n")
 				# Word perplexities: word/perplexity when predicting that word (the final prediction might have been different than the target)
