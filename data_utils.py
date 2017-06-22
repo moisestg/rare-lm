@@ -302,10 +302,8 @@ def eval_last_word_detailed(session, model, input_data, id2word, pos):
 
 		# DETAILED STUFF PER EXAMPLE
 		logits = results["logits"] # np.array of [batch_size*max_len, vocab_size]
-		print(logits.shape)
-		logits = np.reshape(logits, (input_x.shape[0], -1, logits.shape[1])) # [batch_size, max_len, vocab_size]
-		print(logits.shape)
 		vocab_size = logits.shape[1]
+		logits = np.reshape(logits, (input_x.shape[0], -1, vocab_size)) # [batch_size, max_len, vocab_size]
 		with open("detailed_output_"+str(start_time)+".txt", "a") as f:
 			for b in range(batch_size):
 				f.write("* EXAMPLE "+str(example_count)+":\n")
@@ -321,9 +319,6 @@ def eval_last_word_detailed(session, model, input_data, id2word, pos):
 					f.write(" "+id2word[index])
 				f.write("\n")
 				# Target word rank
-				# TODO: FIX RANK
-				print(vocab_size)
-				print(np.where(ordered_indexes == target_word_id)[0][0])
 				target_word_rank = vocab_size - np.where(ordered_indexes == target_word_id)[0][0]
 				ranks = np.append(ranks, target_word_rank)
 				f.write("Target word rank: "+str(target_word_rank)+"\n")
