@@ -2,7 +2,7 @@ import nltk
 from nltk.tag import StanfordPOSTagger
 import numpy as np
 import matplotlib.pyplot as plt
-from pycorenlp import StanfordCoreNLP
+#from pycorenlp import StanfordCoreNLP
 
 
 ## FUNC'S DEFINITION ##
@@ -158,21 +158,21 @@ if __name__ == "__main__":
 		if num == -1:
 			test_distance_bins = np.append(test_distance_bins, "N") 
 		elif 1 <= num and num <= 10:
-			test_distance_bins = np.append(test_distance_bins, "1-10")
-		elif 11 <= num and num <= 20:
-			test_distance_bins = np.append(test_distance_bins, "11-20")
-		elif 21 <= num and num <= 30:
-			test_distance_bins = np.append(test_distance_bins, "21-30")
-		elif 31 <= num and num <= 40:
-			test_distance_bins = np.append(test_distance_bins, "31-40")
-		elif 41 <= num and num <= 50:
-			test_distance_bins = np.append(test_distance_bins, "41-50")
-		elif 51 <= num and num <= 60:
-			test_distance_bins = np.append(test_distance_bins, "51-60")
-		elif 61 <= num and num <= 70:
-			test_distance_bins = np.append(test_distance_bins, "61-70")
-		elif 71 <= num and num <= 80:
-			test_distance_bins = np.append(test_distance_bins, "71-80")
+			test_distance_bins = np.append(test_distance_bins, "[1,10]")
+		elif 10 < num and num <= 20:
+			test_distance_bins = np.append(test_distance_bins, "(10,20]")
+		elif 20 < num and num <= 30:
+			test_distance_bins = np.append(test_distance_bins, "(20,30]")
+		elif 30 < num and num <= 40:
+			test_distance_bins = np.append(test_distance_bins, "(30,40]")
+		elif 40 < num and num <= 50:
+			test_distance_bins = np.append(test_distance_bins, "(40,50]")
+		elif 50 < num and num <= 60:
+			test_distance_bins = np.append(test_distance_bins, "(50,60]")
+		elif 60 < num and num <= 70:
+			test_distance_bins = np.append(test_distance_bins, "(60,70]")
+		elif 70 < num and num <= 80:
+			test_distance_bins = np.append(test_distance_bins, "(70,80]")
 		elif 80 < num:
 			test_distance_bins = np.append(test_distance_bins, "+80")
 	test_distance = test_distance_bins
