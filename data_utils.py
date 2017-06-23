@@ -486,7 +486,7 @@ def eval_last_word_cache_detailed(session, model, input_data, id2word, pos):
 					cache_logits = [np.exp( theta*np.sum(h_t*entry)) for entry in list(cache.values())]
 					total_sum = np.sum(cache_logits)
 					cache_probs = [float(val)/float(total_sum) for val in cache_logits]
-					cache_ids = cache_logits.keys()
+					cache_ids = cache.keys()
 
 					# Merge word (RNN) and cache probabilities
 					all_word_probs[b, i, :] = (1-interpol)*all_word_probs[b, i, :] # [vocab_size]
