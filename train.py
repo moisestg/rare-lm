@@ -104,15 +104,11 @@ with tf.Graph().as_default():
 
 		print("\n\n\n*** START TRAINING ***\n\n")
 
+		prev_valid_perp = float("Inf") # for learning rate decay
+
 		for i in range(FLAGS.num_epochs):
 
 			print("\nEpoch: %d" % (i + 1))
-
-			# Decay of the learning rate (if any)
-			if FLAGS.learning_rate_decay is not None:
-				#lr_decay = FLAGS.learning_rate_decay ** max(i + 1 - 4, 0.0)
-				lr_decay = FLAGS.learning_rate_decay
-				model_train.assign_lr(session, FLAGS.learning_rate * lr_decay)
 
 			# Train epoch variables
 			start_time = time.time()
@@ -164,7 +160,13 @@ with tf.Graph().as_default():
 				# Eval on dev set
 				if current_step % FLAGS.evaluate_every == 0:
 					valid_losses, valid_accs = dataset.eval_dev(session, model_valid, valid_input, dev_summary_writer)
-					print("\n** Step: %i: Valid Perplexity: %.3f,  Valid Accuracy: %.3f**\n" % (current_step, np.exp(np.mean(valid_perp)), np.mean(valid_acc)))
+					valid_perp = np.exp(np.mean(valid_losses))
+					valid_acc = np.mean(valid_accs)
+					print("\n** Step: %i: Valid Perplexity: %.3f,  Valid Accuracy: %.3f**\n" % (current_step, valid_perp, valid_acc))
+					# Decay of the learning rate (if any)
+					if FLAGS.learning_rate_decay is not None and valid_perp > prev_valid_perp:
+						model_train.assign_lr(session, FLAGS.learning_rate * FLAGS.learning_rate_decay)
+					prev_valid_perp = valid_perp
 
 				# Checkpoint model
 				if current_step % FLAGS.checkpoint_every == 0:
