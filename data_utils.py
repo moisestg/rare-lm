@@ -471,22 +471,18 @@ def eval_last_word_cache_detailed(session, model, input_data, id2word, pos):
 				# Target word info
 				target_word_id = input_y[b, relevant_indexes[b]]
 				f.write("Target word: "+id2word[ target_word_id ]+" | PoS tag: "+pos[example_count]+"\n")
-				cache = dict() # key: output word, value: previous hidden state	
+				cache = [] # key: output word, value: previous hidden state	
 				# Update all probs by mixing word + cache	
 				for i in range(1, relevant_indexes[b]+2): # +1 ???? until last word
 					# Calculate cache probabilities
 					h_t = rnn_outputs[i][b,:]
 					#pseudo_logit = np.exp( theta*np.sum( h_t*rnn_outputs[i-1][b,:] ) )
 					output_id = input_x[b,:][i]
-					if output_id in cache: 
-						cache[output_id] += rnn_outputs[i-1][b,:]
-					else:
-						cache[output_id] = rnn_outputs[i-1][b,:]
-
-					cache_logits = [np.exp( theta*np.sum(h_t*entry)) for entry in list(cache.values())]
-					total_sum = np.sum(cache_logits)
-					cache_probs = [float(val)/float(total_sum) for val in cache_logits]
-					cache_ids = cache.keys()
+					cache.append((output_id, rnn_outputs[i-1][b,:]))
+					cache_logits = [(tupl[0], np.exp(theta*np.sum(h_t*tupl[1]))) for tupl in cache]
+					total_sum = np.sum([tupl[1] for tupl in cache_logits])
+					cache_probs = [float(tupl[1])/float(total_sum) for tupl in cache_logits]
+					cache_ids = [tupl[0] for tupl in cache_logits]
 
 					# Merge word (RNN) and cache probabilities
 					all_word_probs[b, i, :] = (1-interpol)*all_word_probs[b, i, :] # [vocab_size]
