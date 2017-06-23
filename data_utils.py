@@ -323,7 +323,7 @@ def eval_last_word_detailed(session, model, input_data, id2word, pos):
 				ranks = np.append(ranks, target_word_rank)
 				f.write("Target word rank: "+str(target_word_rank)+"\n")
 				# Word perplexities: word/perplexity when predicting that word (the final prediction might have been different than the target)
-				f.write("Word perplexities:\n")
+				f.write("Word perplexities (word/perplexity):\n")
 				for i in range(relevant_indexes[b]+2): # until the last word
 					f.write(id2word[ input_x[b, i] ]) # word
 					if i>0:
@@ -471,20 +471,21 @@ def eval_last_word_cache_detailed(session, model, input_data, id2word, pos):
 				# Target word info
 				target_word_id = input_y[b, relevant_indexes[b]]
 				f.write("Target word: "+id2word[ target_word_id ]+" | PoS tag: "+pos[example_count]+"\n")
-				cache_logits = dict() # key: output word, value: logit	
+				cache = dict() # key: output word, value: previous hidden state	
 				# Update all probs by mixing word + cache	
 				for i in range(1, relevant_indexes[b]+2): # +1 ???? until last word
 					# Calculate cache probabilities
 					h_t = rnn_outputs[i][b,:]
-					pseudo_logit = np.exp( theta*np.sum( h_t*rnn_outputs[i-1][b,:]) )
+					#pseudo_logit = np.exp( theta*np.sum( h_t*rnn_outputs[i-1][b,:] ) )
 					output_id = input_x[b,:][i]
-					if output_id in cache_logits: 
-						cache_logits[output_id] += pseudo_logit
+					if output_id in cache: 
+						cache[output_id] += rnn_outputs[i-1][b,:]
 					else:
-						cache_logits[output_id] = pseudo_logit
+						cache[output_id] = rnn_outputs[i-1][b,:]
 
-					total_sum = sum(cache_logits.values())
-					cache_probs = [float(val)/float(total_sum) for val in cache_logits.values()]
+					cache_logits = [np.exp( theta*np.sum(h_t*entry)) for entry in list(cache.values())]
+					total_sum = np.sum(cache_logits)
+					cache_probs = [float(val)/float(total_sum) for val in cache_logits]
 					cache_ids = cache_logits.keys()
 
 					# Merge word (RNN) and cache probabilities
@@ -504,7 +505,7 @@ def eval_last_word_cache_detailed(session, model, input_data, id2word, pos):
 				ranks = np.append(ranks, target_word_rank)
 				f.write("Target word rank: "+str(target_word_rank)+"\n")
 				# Word perplexities: word/perplexity when predicting that word (the final prediction might have been different than the target)
-				f.write("Word perplexities:\n")
+				f.write("Word perplexities (word/perplexity):\n")
 				for i in range(relevant_indexes[b]+2): # until the last word
 					f.write(id2word[ input_x[b, i] ]) # word
 					if i>0:
