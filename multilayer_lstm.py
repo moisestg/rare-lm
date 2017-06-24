@@ -42,6 +42,51 @@ class MultilayerLSTM(object):
 		self.initial_state = cell.zero_state(batch_size, tf.float32)
 
 		outputs, state = tf.contrib.rnn.static_rnn(cell, input_x, initial_state=self.initial_state) # outputs is a list of num_steps Tensors of shape [batch_size, hidden_size] / slower: tf.nn.dynamic_rnn()
+		
+		## IF ATTENTION - Update outputs (and final_state?) ##
+
+		self.att_Y = att_Y = [] # list of len = batch_size ?
+		for i in range(batch_size):
+			att_Y.append(
+				tf.get_variable("att_Y"+str(i), [config.hidden_size, config.att_size], dtype=tf.float32, trainable=False)
+			) 
+
+		att_W_Y = tf.get_variable("att_W_Y", [config.hidden_size, config.hidden_size], dtype=tf.float32)
+		att_W_h = tf.get_variable("att_W_h", [config.hidden_size, config.hidden_size], dtype=tf.float32)
+		att_softmax_w = tf.get_variable("att_softmax_w", [1, config.hidden_size], dtype=tf.float32)
+
+		att_W_r = tf.get_variable("att_W_r", [config.hidden_size, config.hidden_size], dtype=tf.float32)
+		att_W_x = tf.get_variable("att_W_x", [config.hidden_size, config.hidden_size], dtype=tf.float32)
+
+		#ones = tf.ones([1, config.att_size], dtype=tf.float32)
+
+		for t in range(len(outputs)):
+			
+			for b in range(batch_size):
+
+				h_t = tf.reshape( outputs[t][b, :], [config.hidden_size, 1] ) # [hidden_size, 1]
+
+				# Calculate attention scores
+				M_t = tf.tanh( tf.matmul(att_W_Y, att_Y[b]) + 
+								tf.tile( tf.matmul(att_W_h, h_t), tf.constant([1, config.att_size]) ) ) # [hidden_size, att_size]
+
+				# Calculate attention weights
+				alpha_t = tf.nn.softmax( tf.matmul( att_softmax_w, M_t ) ) # [1, att_size]
+
+				# Calculate attention representation
+				r_t = tf.matmul( att_Y[b], tf.transpose(alpha_t) ) # [hidden_size, 1]
+
+				# Calculate final representation h_t
+				h_t_star = tf.tanh( tf.matmul(att_W_r, r_t) + tf.matmul(att_W_x, h_t) ) # [1, hidden_size]
+
+				# Replace h_t with h_t_star in outputs
+				tf.scatter_update( outputs[t], tf.constant([b]), h_t_star )
+
+				# Update memory (AT THE END)
+				att_Y[b] = tf.concat([ h_t , att_Y[b][:, :-1] ], axis=1) # scatter_update() only allows to change 1st dimension
+
+		## END ATTENTION ##
+
 		self.outputs = outputs
 		self.final_state = state
 
