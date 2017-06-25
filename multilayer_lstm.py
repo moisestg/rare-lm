@@ -81,6 +81,8 @@ class MultilayerLSTM(object):
 			optimizer = tf.train.GradientDescentOptimizer(self.lr)
 		elif config.optimizer == "adam":
 			optimizer = tf.train.AdamOptimizer(self.lr)
+		elif config.optimizer == "adagrad":
+			optimizer = tf.train.AdagradOptimizer(self.lr)
 		else:
 			raise ValueError("Not supported optimizer :(")
 
