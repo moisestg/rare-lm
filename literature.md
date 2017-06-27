@@ -26,6 +26,8 @@
 
     * "Teaching machines to read and comprehend" ([link](http://papers.nips.cc/paper/5945-teaching-machines-to-read-and-comprehend.pdf)): attention applied to read comprehension tasks.
 
+    * "Pointer Sentinel Mixture Models" ([link](https://arxiv.org/pdf/1609.07843.pdf)): similar to the continuous cache approach? Combination of selection of previous input words (pointer) and the base LSTM recurrent language model.
+
 * Memory networks:
 
     * "Memory Networks" ([link](https://arxiv.org/pdf/1410.3916)): seminal paper on Memory Networks. 
