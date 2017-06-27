@@ -148,29 +148,27 @@ with tf.Graph().as_default():
 				current_step = sv.global_step.eval(session) 
 
 				# Print some info
-				if step % 100 == 0: # epoch_size = 90687 / (model_train.input.epoch_size // 10) == 10
+				if step % 5000 == 0: # epoch_size = 90687 / (model_train.input.epoch_size // 10) == 10
 					print("Step: %i: Perplexity: %.3f, Accuracy: %.3f, Speed: %.0f wps" %
 								(current_step, perplexity, accuracy,
 								 iters * train_input.batch_size / (time.time() - start_time)))
 
 				# Write train summary 
-				if step % 1000 == 0: # (model_train.input.epoch_size // 10) == 10
+				if step % 5000 == 0: # (model_train.input.epoch_size // 10) == 10
 					data_utils.write_summary(train_summary_writer, current_step, {"perplexity": perplexity, "accuracy": accuracy})
 
-				# Eval on dev set
-				if current_step % FLAGS.evaluate_every == 0:
-					valid_losses, valid_accs = dataset.eval_dev(session, model_valid, valid_input, dev_summary_writer)
-					valid_perp = np.exp(np.mean(valid_losses))
-					valid_acc = np.mean(valid_accs)
-					print("\n** Step: %i: Valid Perplexity: %.3f,  Valid Accuracy: %.3f**\n" % (current_step, valid_perp, valid_acc))
-					# Decay of the learning rate (if any)
-					if FLAGS.learning_rate_decay is not None and valid_perp > prev_valid_perp:
-						model_train.assign_lr(session, FLAGS.learning_rate * FLAGS.learning_rate_decay)
-					prev_valid_perp = valid_perp
+			# Eval on dev set
+			valid_losses, valid_accs = dataset.eval_dev(session, model_valid, valid_input, dev_summary_writer)
+			valid_perp = np.exp(np.mean(valid_losses))
+			valid_acc = np.mean(valid_accs)
+			print("\n** Step: %i: Valid Perplexity: %.3f,  Valid Accuracy: %.3f**\n" % (current_step, valid_perp, valid_acc))
+			# Decay of the learning rate (if any)
+			if FLAGS.learning_rate_decay is not None and valid_perp > prev_valid_perp:
+				model_train.assign_lr(session, FLAGS.learning_rate * FLAGS.learning_rate_decay)
+			prev_valid_perp = valid_perp
 
-				# Checkpoint model
-				if current_step % FLAGS.checkpoint_every == 0:
-					path = saver.save(session, checkpoint_prefix, global_step=current_step)
-					print("\n** Saved model checkpoint to {} **\n".format(path))
+			# Checkpoint model
+			path = saver.save(session, checkpoint_prefix, global_step=current_step)
+			print("\n** Saved model checkpoint to {} **\n".format(path))
 
 			print("\n\n----- Last epoch took a total of: "+str(time.time() - start_time)+" s ------\n")
