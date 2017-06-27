@@ -36,7 +36,8 @@ def pos_tags(data, lib_path, caseless=False):
 	else:
 		tagger = StanfordPOSTagger(lib_path+"models/english-bidirectional-distsim.tagger", path_to_jar=lib_path+"stanford-postagger-3.7.0.jar")
 	result = np.array([])
-	for line in data:
+	for i, line in enumerate(data):
+		print("Processing line "+str(i))
 		words = tokenizer(line)
 		tags = tagger.tag(words)
 		result = np.append(result, tags[-1][1])
@@ -73,7 +74,7 @@ def rename_pos(tag):
 		return "ADJ"
 	elif tag=="VB" or tag=="VBD" or tag=="VBG" or tag=="VBN" or tag=="VBP" or tag=="VBZ":
 		return "V"
-	elif tag=="RB" or tag=="RBS" or tag=="RBR":
+	elif tag=="RB" or tag=="RP" or tag=="RBS" or tag=="RBR":
 		return "ADV"
 	else:
 		return "O"
@@ -124,6 +125,30 @@ def split_categories_plot(perp, acc, labels):
 	autolabel(rects, ax)
 	plt.show()
 
+def bins_distance(distance):
+	distance_bins = np.array([])	
+	for i, num in enumerate(distance):
+		if num == -1:
+			distance_bins = np.append(distance_bins, "N") 
+		elif 1 <= num and num <= 10:
+			distance_bins = np.append(distance_bins, "[1,10]")
+		elif 10 < num and num <= 20:
+			distance_bins = np.append(distance_bins, "(10,20]")
+		elif 20 < num and num <= 30:
+			distance_bins = np.append(distance_bins, "(20,30]")
+		elif 30 < num and num <= 40:
+			distance_bins = np.append(distance_bins, "(30,40]")
+		elif 40 < num and num <= 50:
+			distance_bins = np.append(distance_bins, "(40,50]")
+		elif 50 < num and num <= 60:
+			distance_bins = np.append(distance_bins, "(50,60]")
+		elif 60 < num and num <= 70:
+			distance_bins = np.append(distance_bins, "(60,70]")
+		elif 70 < num and num <= 80:
+			distance_bins = np.append(distance_bins, "(70,80]")
+		elif 80 < num:
+			distance_bins = np.append(distance_bins, "+80")
+	return distance_bins
 
 ## MAIN ##
 
@@ -140,7 +165,14 @@ if __name__ == "__main__":
 		dev_data = f.readlines()
 	dev_data = [*map(str.strip, dev_data)]
 
+	control_path = "./analysis/lambada_control_test_data_plain_text.txt"
+	with open(control_path, "r", encoding="utf-8") as f:
+		control_data = f.readlines()
+	control_data = [*map(str.strip, control_data)]
+
 	lambada = test_data + dev_data
+
+	## TEST SET ##
 
 	# Target word in context or not
 	# Yes: 84.67%, No: 15.33% (out of a total of 5153 examples)
@@ -153,29 +185,8 @@ if __name__ == "__main__":
     #  863   797  790  728   678   504   461   189    69    13 
 	plt.hist(test_distance, bins=50)
 	plt.show()
-	test_distance_bins = np.array([])	
-	for i, num in enumerate(test_distance):
-		if num == -1:
-			test_distance_bins = np.append(test_distance_bins, "N") 
-		elif 1 <= num and num <= 10:
-			test_distance_bins = np.append(test_distance_bins, "[1,10]")
-		elif 10 < num and num <= 20:
-			test_distance_bins = np.append(test_distance_bins, "(10,20]")
-		elif 20 < num and num <= 30:
-			test_distance_bins = np.append(test_distance_bins, "(20,30]")
-		elif 30 < num and num <= 40:
-			test_distance_bins = np.append(test_distance_bins, "(30,40]")
-		elif 40 < num and num <= 50:
-			test_distance_bins = np.append(test_distance_bins, "(40,50]")
-		elif 50 < num and num <= 60:
-			test_distance_bins = np.append(test_distance_bins, "(50,60]")
-		elif 60 < num and num <= 70:
-			test_distance_bins = np.append(test_distance_bins, "(60,70]")
-		elif 70 < num and num <= 80:
-			test_distance_bins = np.append(test_distance_bins, "(70,80]")
-		elif 80 < num:
-			test_distance_bins = np.append(test_distance_bins, "+80")
-	test_distance = test_distance_bins
+
+	test_distance = bins_distance(test_distance)
 	fd = nltk.FreqDist(test_distance)
 	fd.tabulate()
 
@@ -199,3 +210,41 @@ if __name__ == "__main__":
 	fd.tabulate()
 
 	np.save("./analysis/test_pos", test_pos)
+
+	## CONTROL SET ##
+	
+	control_context, control_distance, control_repetition = target_in_context( [*map(str.lower, control_data)] )
+	
+	# Target word in context or not
+	#   N    Y 
+	# 4163  837 
+	fd = nltk.FreqDist(control_context)
+	fd.tabulate()
+
+	# Distance to mention
+	#   N (30,40] (20,30] (40,50] (10,20] (50,60] (60,70]  [1,10] (70,80]     +80 
+	# 4163     155     141     137     110      97      83      47      43      24
+	plt.hist(control_distance, bins=50)
+	plt.show()
+	control_distance = bins_distance(control_distance)
+	fd = nltk.FreqDist(control_distance)
+	fd.tabulate()
+
+	# Number of mentions
+	#   N    1    2    3    4    5    6    7    9    8 
+	# 4163  572  163   57   27   10    3    3    1    1 
+	control_repetition = np.array( ["N" if num == -1 else int(num) for num in control_repetition] )
+	fd = nltk.FreqDist(control_repetition)
+	fd.tabulate()
+
+	# Target word PoS tag
+
+	control_pos = pos_tags(control_data, "/home/moises/thesis/stanford-postagger-full-2016-10-31/", caseless=True)
+	control_pos = np.array([*map(rename_pos, control_pos)])
+	fd = nltk.FreqDist(control_pos)
+	fd.tabulate()
+
+	np.save("./analysis/control_context", control_context)
+	np.save("./analysis/control_distance", control_distance)
+	np.save("./analysis/control_repetition", control_repetition)
+	np.save("./analysis/control_pos", control_pos)
