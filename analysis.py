@@ -238,7 +238,8 @@ if __name__ == "__main__":
 	fd.tabulate()
 
 	# Target word PoS tag
-
+	#  CN    O    V  ADV  ADJ   PN 
+	# 2400  829  728  440  308  295 
 	control_pos = pos_tags(control_data, "/home/moises/thesis/stanford-postagger-full-2016-10-31/", caseless=True)
 	control_pos = np.array([*map(rename_pos, control_pos)])
 	fd = nltk.FreqDist(control_pos)
