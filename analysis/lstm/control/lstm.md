@@ -1,13 +1,13 @@
 # LSTM
 1 layer, 512 hidden size, 1 epoch  
-All perplexity and accuracy results are computed on lambada_test  
-Perplexity: 13059.516, Accuracy: 0.1 %  
+All perplexity and accuracy results are computed on lambada_control  
+Perplexity: 134.22, Accuracy: 21.9 %  
 
 ### Target word (or its lemma) PoS tag
 
-|  PN  |  CN  | V   | ADJ | ADV | O  |
+|  CN  |  O   | V   | ADV | ADV | PN |
 |:----:|:----:|-----|-----|-----|----|
-| 2248 | 2215 | 367 | 222 | 66  | 35 | 
+| 2400 | 829  | 728 | 440 | 308 | 295| 
 
 ![perp_pos](perp_pos.png)
 
@@ -17,7 +17,7 @@ Perplexity: 13059.516, Accuracy: 0.1 %
 
 |  Yes |  No |
 |:----:|:---:|
-| 4363 | 790 | 
+| 837  | 4163| 
 
 ![perp_context](perp_context.png)
 
@@ -25,9 +25,9 @@ Perplexity: 13059.516, Accuracy: 0.1 %
 
 ### Distance (in #words) to previous target word mentions in the context
 
-|  No | [1,10] | (10,20] | (20,30] | (30,40] | (40,50] | (50,60] | (60,70] | (70,80] | +80 |
+|  No | (30,40]| (20,30] | (40,50] | (10,20] | (50,60] | (60,70] | [1,10]  | (70,80] | +80 |
 |:---:|:------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:---:|
-| 790 |   13   |   504   |   678   |   797   |   863   |   728   |   461   |   189   |  69 | 
+| 4163|   155  |   141   |   137   |   110   |   97    |   83    |   47    |   43    |  24 | 
 
 ![perp_distance](perp_distance.png)
 
@@ -35,9 +35,9 @@ Perplexity: 13059.516, Accuracy: 0.1 %
 
 ### Number of mentions of the target word in the context
 
-|  No |   1  |  2  |  3  |  4 | 5 |
-|:---:|:----:|:---:|:---:|:--:|:-:|
-| 790 | 3367 | 837 | 135 | 23 | 1 |
+|  No |   1  |  2  |  3  |  4 | 5 | +5 |
+|:---:|:----:|:---:|:---:|:--:|:-:|:--:|
+| 4163| 572  | 163 | 57  | 27 | 10| 8  |
 
 ![perp_repetition](perp_repetition.png)
 
