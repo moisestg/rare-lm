@@ -239,8 +239,13 @@ if __name__ == "__main__":
 
 	# Target word PoS tag
 	#  CN    O    V  ADV  ADJ   PN 
-	# 2400  829  728  440  308  295 
-	control_pos = pos_tags(control_data, "/home/moises/thesis/stanford-postagger-full-2016-10-31/", caseless=True)
+	# 2377  824  792  408  307  292 
+	#control_pos = pos_tags(control_data, "/home/moises/thesis/stanford-postagger-full-2016-10-31/", caseless=True)
+	control_pos_path = "./analysis/control_real_pos.txt"
+	with open(control_pos_path, "r", encoding="utf-8") as f:
+		control_pos = []
+		for line in f:
+			control_pos.append(line.strip())
 	control_pos = np.array([*map(rename_pos, control_pos)])
 	fd = nltk.FreqDist(control_pos)
 	fd.tabulate()
