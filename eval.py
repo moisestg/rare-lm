@@ -1,4 +1,5 @@
 import tensorflow as tf
+import argparse
 from multilayer_lstm import MultilayerLSTM
 import data_utils
 import analysis
@@ -11,36 +12,37 @@ import collections
 
 
 ## PARAMETERS ##
+parser = argparse.ArgumentParser(fromfile_prefix_chars='@')
 
 # Data loading parameters
-tf.flags.DEFINE_string("train_path", "../simple-examples/data/ptb.train.txt", "Path to the training data") #/home/moises/thesis/lambada/lambada-dataset/train-novels/
-tf.flags.DEFINE_string("test_path", "../simple-examples/data/ptb.test.txt", "Path to the test data") #/home/moises/thesis/lambada/lambada-dataset/train-novels/
+parser.add_argument("--train_path", type=str, default="../simple-examples/data/ptb.train.txt", help="Path to the training data") #/home/moises/thesis/lambada/lambada-dataset/train-novels/
+parser.add_argument("--test_path", type=str, default="../simple-examples/data/ptb.test.txt", help="Path to the test data") #/home/moises/thesis/lambada/lambada-dataset/dev/
 
 # Model parameters
-tf.flags.DEFINE_string("model_path", "", "Path to the trained model") 
+parser.add_argument("--model_path", type=str, default="", help="Path to the trained model") 
 #tf.flags.DEFINE_string("pretrained_emb", "word2vec", "Pretrained vectors to initialize the embedding matrix")
-tf.flags.DEFINE_integer("emb_size", 200, "Dimensionality of word embeddings")
-tf.flags.DEFINE_integer("vocab_size", 10000, "Size of the vocabulary")
-tf.flags.DEFINE_integer("num_layers", 2, "Number of recurrent layers")
-tf.flags.DEFINE_integer("hidden_size", 200, "Size of the hidden & cell state")
-tf.flags.DEFINE_integer("num_steps", 20, "Number of unrolled steps for BPTT")
-tf.flags.DEFINE_string("optimizer", "grad_desc", "Optimizer used to calculate the gradients")
-tf.flags.DEFINE_float("learning_rate", 1.0, "Learning rate of the optimizer")
-tf.flags.DEFINE_float("learning_rate_decay", 0.5, "Decay (per epoch) of the learning rate")
-tf.flags.DEFINE_float("keep_prob", 1.0, "Dropout output keep probability")
-tf.flags.DEFINE_float("clip_norm", 5.0, "Norm value to clip the gradients")
+parser.add_argument("--emb_size", type=int, default=200, help="Dimensionality of word embeddings")
+parser.add_argument("--vocab_size", type=int, default=10000, help="Size of the vocabulary")
+parser.add_argument("--num_layers", type=int, default=2, help="Number of recurrent layers")
+parser.add_argument("--hidden_size", type=int, default=200, help="Size of the hidden & cell state")
+parser.add_argument("--num_steps", type=int, default=20, help="Number of unrolled steps for BPTT")
+parser.add_argument("--optimizer", type=str, default="grad_desc", help="Optimizer used to calculate the gradients")
+parser.add_argument("--learning_rate", type=float, default=1.0, help="Learning rate of the optimizer")
+parser.add_argument("--learning_rate_decay", type=float, default=None, help="Decay (per epoch) of the learning rate") # 0.5
+parser.add_argument("--keep_prob", type=float, default=1.0, help="Dropout output keep probability")
+parser.add_argument("--clip_norm", type=float, default=5.0, help="Norm value to clip the gradients")
 
 # Eval parameters
-tf.flags.DEFINE_integer("batch_size", 128, "Batch size")
-tf.flags.DEFINE_boolean("plots", True, "Plot results splitted by categories")
+parser.add_argument("--batch_size", type=int, default=128, help="Batch size")
+parser.add_argument("--plots", type=bool, default=True, help="Plot results splitted by categories")
 
-FLAGS = tf.flags.FLAGS
-FLAGS._parse_flags()
+FLAGS, _ = parser.parse_known_args()
 
-print("\nParameters:")
-for attr, value in FLAGS.__flags.items():
-	print("\t- {} = {}".format(attr.upper(), value))
-print("\n")
+print("\n- Parameters:")
+flags_list = list(vars(FLAGS))
+flags_list.sort()
+for flag in flags_list:
+	print("  --"+flag+"="+str(getattr(FLAGS, flag)))
 
 ## MAIN ##
 

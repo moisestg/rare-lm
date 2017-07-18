@@ -1,4 +1,5 @@
 import tensorflow as tf
+import argparse
 from multilayer_lstm import MultilayerLSTM
 import data_utils
 import numpy as np
@@ -9,40 +10,41 @@ import collections
 
 
 ## PARAMETERS ##
+parser = argparse.ArgumentParser(fromfile_prefix_chars='@')
 
 # Data loading parameters
-tf.flags.DEFINE_string("train_path", "../simple-examples/data/ptb.train.txt", "Path to the training data") #/home/moises/thesis/lambada/lambada-dataset/train-novels/
-tf.flags.DEFINE_string("dev_path", "../simple-examples/data/ptb.valid.txt", "Path to the dev data") #/home/moises/thesis/lambada/lambada-dataset/dev/
-tf.flags.DEFINE_string("save_path", "./runs/", "Path to save the model's checkpoints and summaries")
+parser.add_argument("--train_path", type=str, default="../simple-examples/data/ptb.train.txt", help="Path to the training data") #/home/moises/thesis/lambada/lambada-dataset/train-novels/
+parser.add_argument("--dev_path", type=str, default="../simple-examples/data/ptb.valid.txt", help="Path to the dev data") #/home/moises/thesis/lambada/lambada-dataset/dev/
+parser.add_argument("--save_path", type=str, default="./runs/", help="Path to save the model's checkpoints and summaries")
 
 # Model parameters
-tf.flags.DEFINE_string("pretrained_emb", None, "Pretrained vectors to initialize the embedding matrix")
-tf.flags.DEFINE_integer("emb_size", 200, "Dimensionality of word embeddings")
-tf.flags.DEFINE_integer("vocab_size", 10000, "Size of the vocabulary")
-tf.flags.DEFINE_integer("num_layers", 2, "Number of recurrent layers")
-tf.flags.DEFINE_integer("hidden_size", 200, "Size of the hidden & cell state")
-tf.flags.DEFINE_integer("num_steps", 20, "Number of unrolled steps for BPTT")
-tf.flags.DEFINE_string("optimizer", "grad_desc", "Optimizer used to calculate the gradients")
-tf.flags.DEFINE_float("learning_rate", 1.0, "Learning rate of the optimizer")
-tf.flags.DEFINE_float("learning_rate_decay", None, "Decay (per epoch) of the learning rate") # 0.5
-tf.flags.DEFINE_float("keep_prob", 1.0, "Dropout output keep probability")
-tf.flags.DEFINE_float("clip_norm", 5.0, "Norm value to clip the gradients")
+parser.add_argument("--pretrained_emb", type=str, default=None, help="Pretrained vectors to initialize the embedding matrix")
+parser.add_argument("--emb_size", type=int, default=200, help="Dimensionality of word embeddings")
+parser.add_argument("--vocab_size", type=int, default=10000, help="Size of the vocabulary")
+parser.add_argument("--num_layers", type=int, default=2, help="Number of recurrent layers")
+parser.add_argument("--hidden_size", type=int, default=200, help="Size of the hidden & cell state")
+parser.add_argument("--num_steps", type=int, default=20, help="Number of unrolled steps for BPTT")
+parser.add_argument("--optimizer", type=str, default="grad_desc", help="Optimizer used to calculate the gradients")
+parser.add_argument("--learning_rate", type=float, default=1.0, help="Learning rate of the optimizer")
+parser.add_argument("--learning_rate_decay", type=float, default=None, help="Decay (per epoch) of the learning rate") # 0.5
+parser.add_argument("--keep_prob", type=float, default=1.0, help="Dropout output keep probability")
+parser.add_argument("--clip_norm", type=float, default=5.0, help="Norm value to clip the gradients")
 
 # Training parameters
-tf.flags.DEFINE_integer("batch_size", 128, "Batch size") 
-tf.flags.DEFINE_integer("num_epochs", 13, "Number of training epochs")
-tf.flags.DEFINE_integer("evaluate_every", 1000, "Evaluate model on dev set after this many steps")
-tf.flags.DEFINE_integer("checkpoint_every", 1000, "Save model after this many steps ")
-tf.flags.DEFINE_integer("num_checkpoints", 5, "Number of checkpoints to store (default: 5)")
-tf.flags.DEFINE_string("restore_path", None, "Path to the model to resume the training (default: None)")
+parser.add_argument("--batch_size", type=int, default=128, help="Batch size") 
+parser.add_argument("--num_epochs", type=int, default=13, help="Number of training epochs")
+parser.add_argument("--evaluate_every", type=int, default=1000, help="Evaluate model on dev set after this many steps")
+parser.add_argument("--checkpoint_every", type=int, default=1000, help="Save model after this many steps ")
+parser.add_argument("--num_checkpoints", type=int, default=5, help="Number of checkpoints to store (default: 5)")
+parser.add_argument("--restore_path", type=str, default=None, help="Path to the model to resume the training (default: None)")
 
-FLAGS = tf.flags.FLAGS
-FLAGS._parse_flags()
+FLAGS, _ = parser.parse_known_args()
 
-print("\nParameters:")
-for attr, value in FLAGS.__flags.items():
-	print("\t- {} = {}".format(attr.upper(), value))
-print("\n")
+print("\n- Parameters:")
+flags_list = list(vars(FLAGS))
+flags_list.sort()
+for flag in flags_list:
+	print("  --"+flag+"="+str(getattr(FLAGS, flag)))
 
 
 ## MAIN ##
