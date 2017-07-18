@@ -6,6 +6,8 @@
 
 * `--emb_size 200 --vocab_size 93215 --num_layers 1 --hidden_size 512 --num_steps 35 --optimizer "grad_desc" --learning_rate 1.0 --keep_prob 1.0 --clip_norm 8.0 --batch_size 128 --num_epochs 1 --train_path "./lambada-dataset/lambada_train.txt" --dev_path "./lambada-dataset/lambada_development_plain_text.txt"`: valid perplexity:  / test perplexity: 8565.413, test accuracy: 0.1%
 
+* BEST `--emb_size 512 --vocab_size 93215 --num_layers 1 --hidden_size 512 --num_steps 35 --optimizer "grad_desc" --learning_rate 1.0 --learning_rate_decay 0.5 --keep_prob 1.0 --clip_norm 8.0 --batch_size 64 --num_epochs 10 --train_path "./lambada-dataset/lambada_train.txt" --dev_path "./lambada-dataset/lambada_development_plain_text.txt"`: valid perplexity: ~4500
+
 ### MULTILSTM + CONTINUOUS CACHE
 
 * `--theta 0.3 --lambda 0.7` valid perplexity:  / test perplexity: 119.713, test accuracy: 14.6%
