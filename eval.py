@@ -47,13 +47,13 @@ print("\n")
 # Load data
 dataset = data_utils.LambadaDataset()
 word2id, id2word = dataset.get_vocab(FLAGS.train_path, FLAGS.vocab_size)
-test_data, max_len = dataset.get_test_data(FLAGS.test_path, word2id)
+test_data = dataset.get_test_data(FLAGS.test_path, word2id)#test_data, max_len = dataset.get_test_data(FLAGS.test_path, word2id)
 
 
 with tf.Graph().as_default():
 	
-	print("MAX LEN: "+str(max_len))
-	FLAGS.num_steps = max_len
+	#print("MAX LEN: "+str(max_len))
+	#FLAGS.num_steps = max_len
 	test_input = dataset.get_test_batch_generator(config=FLAGS, data=test_data)
 	with tf.variable_scope("model", reuse=None):
 		model_test = MultilayerLSTM(is_training=False, config=FLAGS, pretrained_emb=None)
