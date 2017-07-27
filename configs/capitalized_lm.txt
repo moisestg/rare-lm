@@ -1,0 +1,17 @@
+--emb_size=200
+--pretrained_emb="word2vec"
+--vocab_size=54843
+--num_layers=1
+--hidden_size=512
+--num_steps=35
+--optimizer="grad_desc"
+--learning_rate=1.0
+--learning_rate_decay=0.5
+--keep_prob=1.0
+--clip_norm=8.0
+--batch_size=64
+--num_epochs=10
+--evaluate_every=10000
+--checkpoint_every=10000
+--train_path="./lambada-dataset/capitalized/capitalized_train.txt"
+--dev_path="./lambada-dataset/capitalized/capitalized_smalltest.txt"

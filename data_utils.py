@@ -14,6 +14,7 @@ import itertools
 _EOS = "<eos>"
 _UNK = "<unk>"
 _PAD = "<pad>" # id: 0
+_BOC = "<boc>" # beginning of chunk
 
 
 ## MISC ##
@@ -40,6 +41,7 @@ def relevant_index(row):
 
 ## GENERAL (DATA LOADING) ##
 
+# Adapted to include list of names
 def get_vocab(train_path, vocab_size, tokenizer, use_unk=True):
 	# Load if already exists
 	pickle_path = os.path.split(train_path)[0]+"/preprocessed/dicts_vocSize"+str(vocab_size)+".pkl"
@@ -57,19 +59,27 @@ def get_vocab(train_path, vocab_size, tokenizer, use_unk=True):
 				else:
 					word_counts[word] = 1
 
-	if use_unk:
-		vocabulary = [tupl[0] for tupl in word_counts.most_common(vocab_size-2)]   
-		word2id = {word: i for i, word in enumerate(vocabulary,2)}
+	# Load names list
+	with open("final_names.pkl", "rb") as f:
+		names_list = pickle.load(f)
+
+	vocabulary = set([tupl[0] for tupl in word_counts.most_common(50000)])
+	vocabulary = vocabulary | names_list
+	vocabulary.remove("<boc>")
+
+	if use_unk: 
+		word2id = {word: i for i, word in enumerate(vocabulary, 3)} # final size: 54843
 		word2id[_PAD] = 0
 		word2id[_UNK] = 1
+		word2id[_BOC] = 2
 	else:
 		vocabulary = [tupl[0] for tupl in word_counts.most_common(vocab_size-1)]  
-		word2id = {word: i for i, word in enumerate(vocabulary,1)}
+		word2id = {word: i for i, word in enumerate(vocabulary, 1)}
 		word2id[_PAD] = 0
 
-	total_freq = sum(freq for freq in word_counts.values())
-	kept_freq = sum(tupl[1] for tupl in word_counts.most_common(vocab_size)) # tupl -> (word, frequency)
-	print("\n\n** Vocabulary of size "+str(vocab_size)+" covers "+str(round(kept_freq/total_freq*100, 2))+"% of the training words. **\n\n")
+	#total_freq = sum(freq for freq in word_counts.values())
+	#kept_freq = sum(tupl[1] for tupl in word_counts.most_common(vocab_size)) # tupl -> (word, frequency)
+	#print("\n\n** Vocabulary of size "+str(vocab_size)+" covers "+str(round(kept_freq/total_freq*100, 2))+"% of the training words. **\n\n")
 
 	# Generate id2word
 	id2word = {v: k for k,v in word2id.items()}
@@ -81,6 +91,48 @@ def get_vocab(train_path, vocab_size, tokenizer, use_unk=True):
 		pickle.dump([word2id, id2word], f)
 
 	return [word2id, id2word]
+
+# def get_vocab(train_path, vocab_size, tokenizer, use_unk=True):
+# 	# Load if already exists
+# 	pickle_path = os.path.split(train_path)[0]+"/preprocessed/dicts_vocSize"+str(vocab_size)+".pkl"
+# 	if os.path.exists(pickle_path):
+# 		with open(pickle_path, "rb") as f:
+# 			return pickle.load(f)
+
+# 	# Generate vocabulary
+# 	word_counts = collections.Counter()
+# 	with open(train_path, "r", encoding="utf-8") as f:
+# 		for line in f:
+# 			for word in tokenizer(line):
+# 				if word in word_counts: 
+# 					word_counts[word] += 1
+# 				else:
+# 					word_counts[word] = 1
+
+# 	if use_unk:
+# 		vocabulary = [tupl[0] for tupl in word_counts.most_common(vocab_size-2)]   
+# 		word2id = {word: i for i, word in enumerate(vocabulary,2)}
+# 		word2id[_PAD] = 0
+# 		word2id[_UNK] = 1
+# 	else:
+# 		vocabulary = [tupl[0] for tupl in word_counts.most_common(vocab_size-1)]  
+# 		word2id = {word: i for i, word in enumerate(vocabulary,1)}
+# 		word2id[_PAD] = 0
+
+# 	total_freq = sum(freq for freq in word_counts.values())
+# 	kept_freq = sum(tupl[1] for tupl in word_counts.most_common(vocab_size)) # tupl -> (word, frequency)
+# 	print("\n\n** Vocabulary of size "+str(vocab_size)+" covers "+str(round(kept_freq/total_freq*100, 2))+"% of the training words. **\n\n")
+
+# 	# Generate id2word
+# 	id2word = {v: k for k,v in word2id.items()}
+	
+# 	output_dir = os.path.split(train_path)[0]+"/preprocessed/"
+# 	if not os.path.exists(output_dir):
+# 		os.makedirs(output_dir)
+# 	with open(pickle_path, "wb") as f:
+# 		pickle.dump([word2id, id2word], f)
+
+# 	return [word2id, id2word]
 
 
 def get_word_ids(data_path, word2id, tokenizer):
@@ -585,7 +637,7 @@ class LambadaDataset(object):
 		return InputGenerator(config, data, input_generator)#return InputGenerator(config, data, input_generator_continuous)
 
 	def eval_dev(self, session, model, input_data, summary_writer=None):
-		return eval_last_word(session, model, input_data, summary_writer)
+		return eval_epoch(session, model, input_data, summary_writer)
 
 	def eval_test(self, session, model, input_data, summary_writer=None):
 		return eval_outputs(session, model, input_data, summary_writer)#return eval_last_word(session, model, input_data, summary_writer)
@@ -647,7 +699,7 @@ def get_word2vec(train_path, vector_dim, word2id):
 		def __iter__(self):
 			for line in open(self.train_path, "r", encoding="utf-8"):
 				yield tokenizer(line)
-	# TODO: Include EOS ??
+				
 	sentence_iterator = Sentence_generator(train_path)
 	model = gensim.models.Word2Vec(sentence_iterator, size=vector_dim)
 

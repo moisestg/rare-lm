@@ -41,8 +41,7 @@ parser.add_argument("--restore_path", type=str, default=None, help="Path to the 
 FLAGS, _ = parser.parse_known_args()
 
 print("\n- Parameters:")
-flags_list = list(vars(FLAGS))
-flags_list.sort()
+flags_list = sorted(vars(FLAGS))
 for flag in flags_list:
 	print("  --"+flag+"="+str(getattr(FLAGS, flag)))
 
@@ -161,9 +160,9 @@ with tf.Graph().as_default():
 
 				# Eval on dev set
 				if current_step % FLAGS.evaluate_every == 0:
-					valid_losses, valid_accs = dataset.eval_dev(session, model_valid, valid_input, dev_summary_writer)
-					valid_perp = np.exp(np.mean(valid_losses))
-					valid_acc = np.mean(valid_accs)
+					valid_perp, valid_acc = dataset.eval_dev(session, model_valid, valid_input, dev_summary_writer)
+					#valid_perp = np.exp(np.mean(valid_losses))
+					#valid_acc = np.mean(valid_accs)
 					print("\n** Step: %i: Valid Perplexity: %.3f,  Valid Accuracy: %.3f**\n" % (current_step, valid_perp, valid_acc))
 					# Decay of the learning rate (if any)
 					if FLAGS.learning_rate_decay is not None and valid_perp > prev_valid_perp:
