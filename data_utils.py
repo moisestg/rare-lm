@@ -174,7 +174,7 @@ def get_word_ids_padded(data_path, word2id, tokenizer):
 
 	return data, max_seq_length
 
-
+# Normal generator
 class input_generator(object):
 	
 	def __init__(self, raw_data, batch_size, num_steps):
@@ -244,7 +244,7 @@ def eval_epoch(session, model, input_data, summary_writer=None):
 	costs = 0.0
 	iters = 0
 	accuracies = []
-	state = session.run(model.initial_state, {model.epoch_size: input_data.epoch_size})
+	#state = session.run(model.initial_state, {model.batch_size: input_data.batch_size})
 
 	fetches = {
 			"cost": model.cost,
@@ -622,25 +622,25 @@ class LambadaDataset(object):
 		return get_word_ids(data_path, word2id, self.tokenizer)
 
 	def get_dev_data(self, data_path, word2id):
-		return get_word_ids_padded(data_path, word2id, self.tokenizer)
+		return get_word_ids(data_path, word2id, self.tokenizer)
 
 	def get_test_data(self, data_path, word2id):
-		return get_word_ids(data_path, word2id, self.tokenizer)#return get_word_ids_padded(data_path, word2id, self.tokenizer)
+		return get_word_ids(data_path, word2id, self.tokenizer) #return get_word_ids_padded(data_path, word2id, self.tokenizer)
 
 	def get_train_batch_generator(self, config, data):
 		return InputGenerator(config, data, input_generator)
 
 	def get_dev_batch_generator(self, config, data):
-		return InputGenerator(config, data, input_generator_continuous)
+		return InputGenerator(config, data, input_generator)
 
 	def get_test_batch_generator(self, config, data):
-		return InputGenerator(config, data, input_generator)#return InputGenerator(config, data, input_generator_continuous)
+		return InputGenerator(config, data, input_generator_continuous) #return InputGenerator(config, data, input_generator_continuous)
 
 	def eval_dev(self, session, model, input_data, summary_writer=None):
 		return eval_epoch(session, model, input_data, summary_writer)
 
 	def eval_test(self, session, model, input_data, summary_writer=None):
-		return eval_outputs(session, model, input_data, summary_writer)#return eval_last_word(session, model, input_data, summary_writer)
+		return eval_outputs(session, model, input_data, summary_writer) #return eval_last_word(session, model, input_data, summary_writer)
 
 	def eval_detailed(self, session, model, input_data, id2word, pos):
 		return eval_last_word_detailed(session, model, input_data, id2word, pos)
