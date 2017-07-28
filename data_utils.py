@@ -257,6 +257,7 @@ def eval_epoch(session, model, input_data, summary_writer=None):
 		feed_dict = {
 			model.input_x: input_x,
 			model.input_y: input_y,
+			model.batch_size: input_x.shape[0],
 		}
 		for i, (c, h) in enumerate(model.initial_state):
 			feed_dict[c] = state[i].c
