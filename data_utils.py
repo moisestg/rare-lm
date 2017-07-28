@@ -244,7 +244,7 @@ def eval_epoch(session, model, input_data, summary_writer=None):
 	costs = 0.0
 	iters = 0
 	accuracies = []
-	#state = session.run(model.initial_state, {model.batch_size: input_data.batch_size})
+	state = session.run(model.initial_state, {model.batch_size: input_data.batch_size})
 
 	fetches = {
 			"cost": model.cost,
