@@ -15,3 +15,5 @@
 --checkpoint_every=10000
 --train_path=./lambada-dataset/capitalized/capitalized_train.txt
 --dev_path=./lambada-dataset/capitalized/capitalized_smalltest.txt
+--test_path=./lambada-dataset/capitalized/capitalized_train.txt
+--model_path=./runs/1501231530/checkpoints/model-330000

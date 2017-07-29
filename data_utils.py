@@ -580,29 +580,83 @@ def eval_last_word_cache_detailed(session, model, input_data, id2word, pos):
 		f.write("Average (target word) perplexity: "+str(perplexity)+" | Average (target word) accuracy: "+str(accuracy)
 				+" | Median (target word) rank: "+str(rank))
 
-	print("Detailed eval time: "+str(time.time()-start_time)+" s") 
+	print("Detailed eval time: "+str(time.time()-start_time)+" s")
+
+def eval_epoch(session, model, input_data, summary_writer=None):
+	costs = 0.0
+	iters = 0
+	accuracies = []
+	state = session.run(model.initial_state, {model.batch_size: input_data.batch_size})
+
+	fetches = {
+			"cost": model.cost,
+			"final_state": model.final_state,
+			"accuracy": model.accuracy,
+	}
+
+	for step in range(input_data.epoch_size):
+		input_x, input_y = input_data.get_batch()
+		feed_dict = {
+			model.input_x: input_x,
+			model.input_y: input_y,
+			model.batch_size: input_x.shape[0],
+		}
+		for i, (c, h) in enumerate(model.initial_state):
+			feed_dict[c] = state[i].c
+			feed_dict[h] = state[i].h
+		
+		results = session.run(fetches, feed_dict)
+		cost = results["cost"]
+		state = results["final_state"]
+		accuracy = results["accuracy"]
+
+		costs += cost
+		accuracies.append(accuracy)
+		iters += input_data.num_steps
+	
+	perplexity = np.exp(costs / iters)
+	accuracy = np.mean(accuracies)
+
+	if summary_writer is not None:
+		write_summary(summary_writer, tf.contrib.framework.get_or_create_global_step().eval(session), {"perplexity": perplexity, "accuracy": accuracy}) # Write summary (CORPUS-WISE stats)	
+
+	return [perplexity , accuracy] 
 
 # Collect hidden states to train name classifier
 def eval_outputs(session, model, input_data, summary_writer=None):
 
+	state = session.run(model.initial_state, {model.batch_size: input_data.batch_size})
+
 	fetches = {
-		"outputs": model.outputs
+		"outputs": model..outputs_stacked
 	}
+
+	output_dir = "./saved_outputs"
+	if not os.path.exists(output_dir):
+		os.makedirs(output_dir)
 
 	start_time = time.time()
 
+	print("Epoch size: "+str(input_data.epoch_size))
 	for step in range(input_data.epoch_size):
+		print("Step: "+str(step))
 		input_x, input_y = input_data.get_batch()
-		batch_size = input_x.shape[0]
 		feed_dict = {
-			model.input_x : input_x,
-			model.input_y : input_y,
-			model.batch_size: batch_size,
+			model.input_x: input_x,
+			model.input_y: input_y,
+			model.batch_size: input_x.shape[0],
 		}
+		for i, (c, h) in enumerate(model.initial_state):
+			feed_dict[c] = state[i].c
+			feed_dict[h] = state[i].h
+		
 		results = session.run(fetches, feed_dict)
-		list_hidden_states = results["outputs"]
-		print(list_hidden_states)
-		print(len(list_hidden_states))
+		hidden_states = results["outputs"]
+		print(hidden_states.shape)
+
+		pickle_path = output_dir+"batch_"+str(step)+".pkl"
+		with open(pickle_path, "wb") as f:
+			pickle.dump(hidden_states, f)
 
 	print("Eval time: "+str(time.time()-start_time)+" s")
 
@@ -635,7 +689,7 @@ class LambadaDataset(object):
 		return InputGenerator(config, data, input_generator)
 
 	def get_test_batch_generator(self, config, data):
-		return InputGenerator(config, data, input_generator_continuous) #return InputGenerator(config, data, input_generator_continuous)
+		return InputGenerator(config, data, input_generator) #return InputGenerator(config, data, input_generator_continuous)
 
 	def eval_dev(self, session, model, input_data, summary_writer=None):
 		return eval_epoch(session, model, input_data, summary_writer)

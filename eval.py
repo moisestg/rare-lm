@@ -39,8 +39,7 @@ parser.add_argument("--plots", type=bool, default=True, help="Plot results split
 FLAGS, _ = parser.parse_known_args()
 
 print("\n- Parameters:")
-flags_list = list(vars(FLAGS))
-flags_list.sort()
+flags_list = sorted(vars(FLAGS))
 for flag in flags_list:
 	print("  --"+flag+"="+str(getattr(FLAGS, flag)))
 
@@ -49,7 +48,7 @@ for flag in flags_list:
 # Load data
 dataset = data_utils.LambadaDataset()
 word2id, id2word = dataset.get_vocab(FLAGS.train_path, FLAGS.vocab_size)
-test_data = dataset.get_test_data(FLAGS.test_path, word2id)#test_data, max_len = dataset.get_test_data(FLAGS.test_path, word2id)
+test_data = dataset.get_test_data(FLAGS.test_path, word2id) #test_data, max_len = dataset.get_test_data(FLAGS.test_path, word2id)
 
 
 with tf.Graph().as_default():
