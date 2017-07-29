@@ -628,7 +628,7 @@ def eval_outputs(session, model, input_data, summary_writer=None):
 	state = session.run(model.initial_state, {model.batch_size: input_data.batch_size})
 
 	fetches = {
-		"outputs": model..outputs_stacked
+		"outputs": model.outputs_stacked
 	}
 
 	output_dir = "./saved_outputs"
