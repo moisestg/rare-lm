@@ -631,15 +631,14 @@ def eval_outputs(session, model, input_data, summary_writer=None):
 		"outputs": model.outputs_stacked
 	}
 
-	output_dir = "./saved_outputs"
+	output_dir = "./saved_outputs/"
 	if not os.path.exists(output_dir):
 		os.makedirs(output_dir)
 
 	start_time = time.time()
 
-	print("Epoch size: "+str(input_data.epoch_size))
 	for step in range(input_data.epoch_size):
-		print("Step: "+str(step))
+		print("Completion percentage: "+str( round((step+1)/input_data.epoch_size*100),2)+" %"  )
 		input_x, input_y = input_data.get_batch()
 		feed_dict = {
 			model.input_x: input_x,
@@ -652,11 +651,11 @@ def eval_outputs(session, model, input_data, summary_writer=None):
 		
 		results = session.run(fetches, feed_dict)
 		hidden_states = results["outputs"]
-		print(hidden_states.shape)
+		#print(hidden_states.shape)
 
 		pickle_path = output_dir+"batch_"+str(step)+".pkl"
 		with open(pickle_path, "wb") as f:
-			pickle.dump(hidden_states, f)
+			pickle.dump(hidden_states.reshape([-1, hidden_states.shape[-1]]), f) # hidden_states.shape[-1] -> embedding_size
 
 	print("Eval time: "+str(time.time()-start_time)+" s")
 
