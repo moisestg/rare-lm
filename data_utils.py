@@ -638,7 +638,7 @@ def eval_outputs(session, model, input_data, summary_writer=None):
 	start_time = time.time()
 
 	for step in range(input_data.epoch_size):
-		print("Completion percentage: "+str( round((step+1)/input_data.epoch_size*100),2)+" %"  )
+		print("Completion percentage: "+str( round((step+1)/input_data.epoch_size*100,2) )+" %"  )
 		input_x, input_y = input_data.get_batch()
 		feed_dict = {
 			model.input_x: input_x,
