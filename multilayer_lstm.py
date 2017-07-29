@@ -43,6 +43,7 @@ class MultilayerLSTM(object):
 
 		outputs, state = tf.contrib.rnn.static_rnn(cell, input_x, initial_state=self.initial_state) # outputs is a list of num_steps Tensors of shape [batch_size, hidden_size] / slower: tf.nn.dynamic_rnn()
 		self.outputs = outputs
+		self.outputs_stacked = tf.stack(outputs, axis=1)
 		self.final_state = state
 
 
