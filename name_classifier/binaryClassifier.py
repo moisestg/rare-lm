@@ -9,7 +9,7 @@ class BinaryClassifier(object):
 		hidden_size = config.hidden_size
 		# Minibatch placeholders for input and output
 		# The output from the LSTM
-		self.input_x = input_x = tf.placeholder(tf.int32, [None, hidden_size], name="input_x")
+		self.input_x = input_x = tf.placeholder(tf.float32, [None, hidden_size], name="input_x")
 		# The target (name or not name)
 		self.input_y = input_y = tf.placeholder(tf.int64, [None], name="input_y") 
 					
