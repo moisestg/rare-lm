@@ -106,7 +106,7 @@ with tf.Graph().as_default():
 				if step % 1000 == 0:
 					fscoreName, fscoreNoName, aucName, aucNoName = getStats(input_y, predictions)
 					print("Step: %i: fscoreName: %.3f, fscoreNoName: %.3f, aucName: %.3f, aucNoName: %.3f, Speed: %.0f Hz" %
-								(current_step, fscoreName, fscoreNoName, aucName, aucNoName
+								(current_step, fscoreName, fscoreNoName, aucName, aucNoName,
 								 iters / (time.time() - start_time)))
 					data_utils.write_summary(train_summary_writer, current_step, 
 						{"fscoreName":fscoreName, "fscoreNoName":fscoreNoName, "aucName":aucName, "aucNoName":aucNoName})
