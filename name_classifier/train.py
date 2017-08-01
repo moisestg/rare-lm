@@ -103,7 +103,7 @@ with tf.Graph().as_default():
 
 				# Write train summary 
 				if step % 1000 == 0:
-					fscoreName, fscoreNoName, aucName, aucNoName = getStats(input_y, predictions)
+					fscoreName, fscoreNoName, aucName, aucNoName = data_utils.getStats(input_y, predictions)
 					print("Step: %i: fscoreName: %.3f, fscoreNoName: %.3f, aucName: %.3f, aucNoName: %.3f, Speed: %.0f Hz" %
 								(current_step, fscoreName, fscoreNoName, aucName, aucNoName,
 								 iters / (time.time() - start_time)))
@@ -112,7 +112,7 @@ with tf.Graph().as_default():
 
 				# Eval on dev set
 				if current_step % FLAGS.evaluate_every == 0:
-					data_utils.eval_dev(session, model_valid, valid_input, dev_summary_writer)
+					data_utils.eval_epoch(session, model_valid, valid_input, dev_summary_writer)
 
 				# Checkpoint model
 				if current_step % FLAGS.checkpoint_every == 0:
