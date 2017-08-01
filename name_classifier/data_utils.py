@@ -46,7 +46,7 @@ def eval_epoch(session, model, input_data, summary_writer=None):
 	y_true = []
 
 	fetches = {
-			"predictions": predictions,
+			"predictions": model.predictions,
 	}
 
 	for step in range(input_data.epoch_size):
