@@ -3,6 +3,7 @@ import pickle
 import numpy as np
 import itertools
 import sklearn.metrics as skmetrics
+import tensorflow as tf
 
 # Batch generation
 class BatchGenerator:
