@@ -14,10 +14,10 @@ class BatchGenerator:
 		self.generator = self.generator()
 
 	def generator(self):
-		for i in itertools.cycle(range(len(os.listdir("inputs/"+str(self.data_set))))):
-			with open("inputs/"+str(self.data_set)+"/batch_"+str(i)+".pkl", "rb") as f:
+		for file in itertools.cycle(os.listdir("inputs/"+str(self.data_set))):
+			with open("inputs/"+str(self.data_set)+"/"+file, "rb") as f:
 				x_batch = pickle.load(f)
-			with open("outputs/"+str(self.data_set)+"/batch_"+str(i)+".pkl", "rb") as f:
+			with open("outputs/"+str(self.data_set)+"/"+file, "rb") as f:
 				y_batch = pickle.load(f)
 			yield x_batch, y_batch
 

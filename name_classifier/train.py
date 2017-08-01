@@ -102,7 +102,7 @@ with tf.Graph().as_default():
 				current_step = sv.global_step.eval(session) 
 
 				# Write train summary 
-				if step % 1000 == 0:
+				if step % 5 == 0:
 					fscoreName, fscoreNoName, auc = data_utils.getStats(input_y, predictions)
 					print("Step: %i: fscoreName: %.3f, fscoreNoName: %.3f, auc: %.3f, Speed: %.0f Hz" %
 								(current_step, fscoreName, fscoreNoName, auc,
