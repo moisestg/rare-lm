@@ -38,11 +38,11 @@ for flag in flags_list:
 with tf.Graph().as_default():
 	# Initialize the model 
 	train_input = data_utils.BatchGenerator(FLAGS.train_path)
-	with tf.variable_scope("model", reuse=None, initializer=initializer):
+	with tf.variable_scope("model", reuse=None):
 		model_train = BinaryClassifier(is_training=True, config=FLAGS)
 
 	valid_input = data_utils.BatchGenerator(FLAGS.dev_path) # 5% of capitalized_train
-	with tf.variable_scope("model", reuse=True, initializer=initializer):
+	with tf.variable_scope("model", reuse=True):
 		model_valid = BinaryClassifier(is_training=False, config=FLAGS)
 
 	# Define saver to checkpoint the model
