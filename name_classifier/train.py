@@ -17,7 +17,6 @@ parser.add_argument("--save_path", type=str, default="./runs/", help="Path to sa
 
 parser.add_argument("--hidden_size", type=int, default=512, help="Size of the hidden & cell state")
 parser.add_argument("--learning_rate", type=float, default=1e-3, help="Learning rate of the optimizer")
-parser.add_argument("--num_checkpoints", type=int, default=5, help="Number of checkpoints to store (default: 5)")
 
 # Training parameters 
 parser.add_argument("--num_epochs", type=int, default=10, help="Number of training epochs")
