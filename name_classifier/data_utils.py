@@ -36,8 +36,8 @@ def write_summary(summary_writer, current_step, values):
 # Evaluation
 def getStats(y_true, y_pred):
 	fscoreName, fscoreNoName = skmetrics.f1_score(y_true, y_pred, labels=[1,0], average=None)
-	aucName, aucNoName = skmetrics.roc_auc_score(y_true, y_pred, labels=[1,0], average=None)
-	return fscoreName, fscoreNoName, aucName, aucNoName
+	auc = skmetrics.roc_auc_score(y_true, y_pred, average=None)
+	return fscoreName, fscoreNoName, auc
 
 def eval_epoch(session, model, input_data, summary_writer=None):
 
@@ -61,14 +61,14 @@ def eval_epoch(session, model, input_data, summary_writer=None):
 		y_pred.extend(predictions)
 		y_true.extend(input_y)
 	
-	fscoreName, fscoreNoName, aucName, aucNoName = getStats(y_true, y_pred)
+	fscoreName, fscoreNoName, auc = getStats(y_true, y_pred)
 
-	print("VALIDATION: fscoreName: %.3f, fscoreNoName: %.3f, aucName: %.3f, aucNoName: %.3f" %
-								(fscoreName, fscoreNoName, aucName, aucNoName))
+	print("VALIDATION: fscore Name: %.3f, fscore NoName: %.3f, auc: %.3f" %
+								(fscoreName, fscoreNoName, auc))
 
 	if summary_writer is not None:
 		write_summary(summary_writer, tf.contrib.framework.get_or_create_global_step().eval(session), 
-			{"fscoreName":fscoreName, "fscoreNoName":fscoreNoName, "aucName":aucName, "aucNoName":aucNoName}) # Write summary (CORPUS-WISE stats)	
+			{"fscoreName":fscoreName, "fscoreNoName":fscoreNoName, "auc":auc}) # Write summary (CORPUS-WISE stats)	
 
 
 

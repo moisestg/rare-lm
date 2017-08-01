@@ -103,12 +103,12 @@ with tf.Graph().as_default():
 
 				# Write train summary 
 				if step % 1000 == 0:
-					fscoreName, fscoreNoName, aucName, aucNoName = data_utils.getStats(input_y, predictions)
-					print("Step: %i: fscoreName: %.3f, fscoreNoName: %.3f, aucName: %.3f, aucNoName: %.3f, Speed: %.0f Hz" %
-								(current_step, fscoreName, fscoreNoName, aucName, aucNoName,
+					fscoreName, fscoreNoName, auc = data_utils.getStats(input_y, predictions)
+					print("Step: %i: fscoreName: %.3f, fscoreNoName: %.3f, auc: %.3f, Speed: %.0f Hz" %
+								(current_step, fscoreName, fscoreNoName, auc,
 								 iters / (time.time() - start_time)))
 					data_utils.write_summary(train_summary_writer, current_step, 
-						{"fscoreName":fscoreName, "fscoreNoName":fscoreNoName, "aucName":aucName, "aucNoName":aucNoName})
+						{"fscoreName":fscoreName, "fscoreNoName":fscoreNoName, "auc":auc})
 
 				# Eval on dev set
 				if current_step % FLAGS.evaluate_every == 0:
