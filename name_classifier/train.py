@@ -1,4 +1,12 @@
+import tensorflow as tf
+import argparse
+from binaryClassifier import BinaryClassifier
 import data_utils
+import numpy as np
+import time
+import os
+import sys
+import collections
 
 ## PARAMETERS ##
 parser = argparse.ArgumentParser(fromfile_prefix_chars='@')
