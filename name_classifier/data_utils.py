@@ -6,6 +6,9 @@ import sklearn.metrics as skmetrics
 import tensorflow as tf
 
 # Batch generation
+def getIdFromFile(string):
+	return int(re.findall(r'\d+', string)[0])
+
 class BatchGenerator:
 
 	def __init__(self, data_set):
@@ -14,7 +17,7 @@ class BatchGenerator:
 		self.generator = self.generator()
 
 	def generator(self):
-		for file in itertools.cycle(os.listdir("inputs/"+str(self.data_set))):
+		for file in itertools.cycle(sorted(os.listdir("inputs/"+str(self.data_set)), key=getIdFromFile)):
 			with open("inputs/"+str(self.data_set)+"/"+file, "rb") as f:
 				x_batch = pickle.load(f)
 			with open("outputs/"+str(self.data_set)+"/"+file, "rb") as f:
@@ -71,5 +74,24 @@ def eval_epoch(session, model, input_data, summary_writer=None):
 		write_summary(summary_writer, tf.contrib.framework.get_or_create_global_step().eval(session), 
 			{"fscoreName":fscoreName, "fscoreNoName":fscoreNoName, "auc":auc}) # Write summary (CORPUS-WISE stats)	
 
+def debug_input(data_set):
+	batch_size=64
+	num_steps=35
+	
+	with open("../lambada-dataset/capitalized/"+data_set+".txt", "r") as f:
+		data = f.readlines()
 
+	lines = [line.strip().split() for line in data]
+	words = [word for line in lines for word in line]
+
+	# Reshape output
+	data_len = len(words)
+	batch_len = data_len // batch_size
+	words = np.array(words)
+	words = np.reshape(output[0 : batch_size * batch_len], [batch_size, batch_len])
+	epoch_size = (batch_len - 1) // num_steps
+
+	for i in itertools.cycle(range(epoch_size)):	
+		y_batch = words[:, i*num_steps+1:(i+1)*num_steps+1].reshape([-1])
+		yield y_batch
 

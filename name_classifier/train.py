@@ -37,6 +37,7 @@ for flag in flags_list:
 # Define graph
 with tf.Graph().as_default():
 	# Initialize the model 
+	words_generator = data_utils.debug_input(FLAGS.train_path)
 	train_input = data_utils.BatchGenerator(FLAGS.train_path)
 	with tf.variable_scope("model", reuse=None):
 		model_train = BinaryClassifier(is_training=True, config=FLAGS)
@@ -82,6 +83,7 @@ with tf.Graph().as_default():
 			iters = 0
 			
 			fetches = {
+				"loss": model_train.loss,
 				"predictions": model_train.predictions,
 				"train_op" : model_train.train_op,
 			}
@@ -98,18 +100,24 @@ with tf.Graph().as_default():
 				# Run batch
 				results = session.run(fetches, feed_dict)
 				predictions = results["predictions"]
+				loss = results["loss"]
 
 				iters += input_x.shape[0] # batch_size
 				current_step = sv.global_step.eval(session) 
 
+				next_words = next(words_generator)
 				# Write train summary 
 				if step % 1000 == 0:
 					fscoreName, fscoreNoName, auc = data_utils.getStats(input_y, predictions)
-					print("Step: %i: fscoreName: %.3f, fscoreNoName: %.3f, auc: %.3f, Speed: %.0f Hz" %
-								(current_step, fscoreName, fscoreNoName, auc,
+					print("Step: %i: fscoreName: %.3f, fscoreNoName: %.3f, auc: %.3f, loss: %.3f, Speed: %.0f Hz" %
+								(current_step, fscoreName, fscoreNoName, auc, loss,
 								 iters / (time.time() - start_time)))
 					data_utils.write_summary(train_summary_writer, current_step, 
-						{"fscoreName":fscoreName, "fscoreNoName":fscoreNoName, "auc":auc})
+						{"fscoreName":fscoreName, "fscoreNoName":fscoreNoName, "auc":auc, "loss":loss})
+					# DEBUG INPUT
+					print(next_words)
+					print(input_y)
+					print(predictions)
 
 				# Eval on dev set
 				if current_step % FLAGS.evaluate_every == 0:
