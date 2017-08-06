@@ -10,6 +10,8 @@ import math
 
 import itertools
 
+import sklearn.metrics as skmetrics
+
 
 _EOS = "<eos>"
 _UNK = "<unk>"
