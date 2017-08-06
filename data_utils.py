@@ -202,7 +202,7 @@ def output_names(train_path):
 	with open(train_path, "r", encoding="utf-8") as f:
 		for line in f:
 			for word in line.strip().split():
-				if word in names_list
+				if word in names_list:
 					output.append(1)
 				else:
 					output.append(0)
