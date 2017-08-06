@@ -9,6 +9,7 @@ class MultilayerLSTM(object):
 		num_steps = config.num_steps
 		self.input_x = input_x = tf.placeholder(tf.int32, [None, num_steps], name="input_x")
 		self.input_y = input_y = tf.placeholder(tf.int32, [None, num_steps], name="input_y")
+		self.name_y = name_y = tf.placeholder(tf.int64, [None], name="name_y") # (name 1 or not name 0)
 		self.batch_size = batch_size = tf.placeholder(tf.int32, name="batch_size")
 
 		## EMBEDDING ##
@@ -44,6 +45,7 @@ class MultilayerLSTM(object):
 		outputs, state = tf.contrib.rnn.static_rnn(cell, input_x, initial_state=self.initial_state) # outputs is a list of num_steps Tensors of shape [batch_size, hidden_size] / slower: tf.nn.dynamic_rnn()
 		self.outputs = outputs
 		self.outputs_stacked = tf.stack(outputs, axis=1)
+		self.outputs_nameFormat = tf.reshape(self.outputs_stacked, [-1, config.hidden_size])
 		self.final_state = state
 
 
@@ -68,15 +70,33 @@ class MultilayerLSTM(object):
 		self.correct_predictions = correct_predictions = tf.equal(predictions, tf.reshape(self.input_y, [-1]))
 		self.accuracy = tf.reduce_mean(tf.cast(correct_predictions, "float"), name="accuracy")
 
+		## NAME PREDICTOR ## 
+		# Fully connected layer with ReLU 
+		with tf.name_scope("relu_layer"):
+			d_prime = config.hidden_size # other values?
+			W_h = tf.get_variable("W_h", [config.hidden_size, d_prime], tf.float32, initializer=tf.contrib.layers.xavier_initializer())
+			b_h = tf.get_variable("b_h", [d_prime], tf.float32, initializer=tf.zeros_initializer())
+			x_h = tf.nn.relu(tf.matmul(self.outputs_nameFormat, W_h) + b_h)
+			
+		# Soft-max layer
+		with tf.name_scope("softmax"):
+			W_name = tf.get_variable("W", [d_prime, 2], tf.float32, initializer=tf.contrib.layers.xavier_initializer())
+			b_name = tf.get_variable("b", [2], tf.float32, initializer=tf.zeros_initializer())
+			self.logits_name = tf.matmul(x_h, W_name) + b_name # [batch, num_classes]
+			self.predictions_name = tf.argmax(self.logits_name, 1, name="predictions_name")
+			losses_name = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=self.logits_name, labels=self.name_y)
+			self.loss_name = loss_name = tf.reduce_mean(losses_name)
+
+		self.loss_sum = self.cost + self.loss_name
+
 		if not is_training:
 			return
-
 
 		## OPTIMIZER ##
 
 		self.lr = tf.Variable(config.learning_rate, trainable=False)
 		tvars = tf.trainable_variables()
-		grads, _ = tf.clip_by_global_norm(tf.gradients(cost, tvars), config.clip_norm) 
+		grads, _ = tf.clip_by_global_norm(tf.gradients(self.loss_sum, tvars), config.clip_norm) 
 		
 		if config.optimizer == "grad_desc":
 			optimizer = tf.train.GradientDescentOptimizer(self.lr)

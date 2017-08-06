@@ -60,15 +60,31 @@ def get_vocab(train_path, vocab_size, tokenizer, use_unk=True):
 					word_counts[word] = 1
 
 	# Load names list
-	with open("final_names.pkl", "rb") as f:
+	with open("names_list.pkl", "rb") as f:
 		names_list = pickle.load(f)
 
-	vocabulary = set([tupl[0] for tupl in word_counts.most_common(50000)])
+	vocabulary = set([tupl[0] for tupl in word_counts.most_common(60000)])
 	vocabulary = vocabulary | names_list
 	vocabulary.remove("<boc>")
 
+	## CHECK ##
+	test_path="../lambada-dataset/capitalized/capitalized_test.txt"
+	test_word_counts = collections.Counter()
+	with open(test_path, "r", encoding="utf-8") as f:
+		for line in f:
+			for word in tokenizer(line):
+				if word in test_word_counts: 
+					test_word_counts[word] += 1
+				else:
+					test_word_counts[word] = 1
+
+	test_kept_freq = sum(tupl[1] for tupl in test_word_counts.most_common() if tupl[0] in vocabulary)
+	test_total_freq = sum(freq for freq in test_word_counts.values())
+	test_kept_freq/test_total_freq
+	## CHECK ##
+
 	if use_unk: 
-		word2id = {word: i for i, word in enumerate(vocabulary, 3)} # final size: 54843
+		word2id = {word: i for i, word in enumerate(vocabulary, 3)} # final size: 63687
 		word2id[_PAD] = 0
 		word2id[_UNK] = 1
 		word2id[_BOC] = 2
@@ -78,7 +94,7 @@ def get_vocab(train_path, vocab_size, tokenizer, use_unk=True):
 		word2id[_PAD] = 0
 
 	#total_freq = sum(freq for freq in word_counts.values())
-	#kept_freq = sum(tupl[1] for tupl in word_counts.most_common(vocab_size)) # tupl -> (word, frequency)
+	#kept_freq = sum(tupl[1] for tupl in word_counts.most_common() if tupl[0] in vocabulary) # tupl -> (word, frequency)
 	#print("\n\n** Vocabulary of size "+str(vocab_size)+" covers "+str(round(kept_freq/total_freq*100, 2))+"% of the training words. **\n\n")
 
 	# Generate id2word
@@ -173,6 +189,39 @@ def get_word_ids_padded(data_path, word2id, tokenizer):
 			data.append(word2id[_PAD])
 
 	return data, max_seq_length
+
+def output_names(train_path):
+	batch_size=64
+	num_steps=35
+
+	# Load names list
+	with open("./name_classifier/names_list.pkl", "rb") as f:
+		names_list = pickle.load(f)
+	
+	output = []
+	with open(train_path, "r", encoding="utf-8") as f:
+		for line in f:
+			for word in line.strip().split():
+				if word in names_list
+					output.append(1)
+				else:
+					output.append(0)
+
+	# Reshape output
+	data_len = len(output)
+	batch_len = data_len // batch_size
+	output = np.array(output)
+	output = np.reshape(output[0 : batch_size * batch_len], [batch_size, batch_len])
+	epoch_size = (batch_len - 1) // num_steps
+
+	for i in itertools.cycle(range(epoch_size)):	
+		y_batch = output[:, i*num_steps+1:(i+1)*num_steps+1].reshape([-1])
+		yield y_batch
+
+def getStats(y_true, y_pred):
+	fscoreName, fscoreNoName = skmetrics.f1_score(y_true, y_pred, labels=[1,0], average=None)
+	auc = skmetrics.roc_auc_score(y_true, y_pred, average=None)
+	return fscoreName, fscoreNoName, auc
 
 # Normal generator
 class input_generator(object):

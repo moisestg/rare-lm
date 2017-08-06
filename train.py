@@ -51,6 +51,7 @@ for flag in flags_list:
 # Load data
 dataset = data_utils.LambadaDataset()
 word2id, id2word = dataset.get_vocab(FLAGS.train_path, FLAGS.vocab_size)
+output_names = data_utils.output_names(FLAGS.train_path)
 train_data = dataset.get_train_data(FLAGS.train_path, word2id)
 valid_data = dataset.get_dev_data(FLAGS.dev_path, word2id) #,max_len
 
@@ -121,15 +122,19 @@ with tf.Graph().as_default():
 				"final_state": model_train.final_state,
 				"accuracy": model_train.accuracy,
 				"eval_op" : model_train.train_op,
+				"predictions_name": model_train.predictions_name,
+				"loss_sum": model_train.loss_sum,
 			}
 
 			# Iterate through all batches (one epoch)
 			for step in range(train_input.epoch_size): 
 				
 				input_x, input_y = train_input.get_batch()
+				name_y = next(output_names)
 				feed_dict = {
 					model_train.input_x: input_x,
 					model_train.input_y: input_y,
+					model_train.name_y: name_y,
 					model_train.batch_size: input_x.shape[0],
 				}
 
@@ -143,6 +148,8 @@ with tf.Graph().as_default():
 				cost = results["cost"]
 				state = results["final_state"]
 				accuracy = results["accuracy"]
+				loss_sum = results["loss_sum"]
+				predictions_name = results["predictions_name"]
 				perplexity = np.exp(cost / train_input.num_steps)
 				iters += train_input.num_steps
 
@@ -153,10 +160,14 @@ with tf.Graph().as_default():
 					print("Step: %i: Perplexity: %.3f, Accuracy: %.3f, Speed: %.0f wps" %
 								(current_step, perplexity, accuracy,
 								 iters * train_input.batch_size / (time.time() - start_time)))
+					fscoreName, fscoreNoName, auc = data_utils.getStats(name_y, predictions_name)
+					print("fscoreName: %.3f, fscoreNoName: %.3f, auc: %.3f, loss: %.3f" %
+								(fscoreName, fscoreNoName, auc, loss_sum))
 
 				# Write train summary 
 				if step % 1000 == 0: # (model_train.input.epoch_size // 10) == 10
-					data_utils.write_summary(train_summary_writer, current_step, {"perplexity": perplexity, "accuracy": accuracy})
+					data_utils.write_summary(train_summary_writer, current_step, {"perplexity": perplexity, "accuracy": accuracy,
+						"loss_sum": loss_sum})
 
 				# Eval on dev set
 				if current_step % FLAGS.evaluate_every == 0:
