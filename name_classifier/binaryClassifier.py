@@ -2,7 +2,7 @@ import tensorflow as tf
 
 class BinaryClassifier(object):
 	"""
-	A simple binary classifier to predict name/no name.
+	A simple binary classifier to predict if a word is a name or not.
 	Uses a fully connected layer with ReLU and a softmax layer.
 	"""
 	def __init__(self, is_training, config):
@@ -15,7 +15,7 @@ class BinaryClassifier(object):
 					
 		# Fully connected layer with ReLU 
 		with tf.name_scope("relu_layer"):
-			d_prime = hidden_size
+			d_prime = hidden_size # other values?
 			W_h = tf.get_variable("W_h", [hidden_size, d_prime], tf.float32, initializer=tf.contrib.layers.xavier_initializer())
 			b_h = tf.get_variable("b_h", [d_prime], tf.float32, initializer=tf.zeros_initializer())
 			x_h = tf.nn.relu(tf.matmul(self.input_x, W_h) + b_h)
@@ -38,7 +38,6 @@ class BinaryClassifier(object):
 			return
 
 		with tf.name_scope("optimizer"):
-			optimizer = tf.train.AdamOptimizer(config.learning_rate)
+			optimizer = tf.train.AdamOptimizer(config.learning_rate)	
 			grads_and_vars = optimizer.compute_gradients(self.loss)
 			self.train_op = optimizer.apply_gradients(grads_and_vars, global_step=tf.contrib.framework.get_or_create_global_step())
-		

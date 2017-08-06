@@ -4,6 +4,7 @@ import numpy as np
 import itertools
 import sklearn.metrics as skmetrics
 import tensorflow as tf
+import re
 
 # Batch generation
 def getIdFromFile(string):
