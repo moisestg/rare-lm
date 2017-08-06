@@ -37,7 +37,7 @@ for flag in flags_list:
 # Define graph
 with tf.Graph().as_default():
 	# Initialize the model 
-	words_generator = data_utils.debug_input(FLAGS.train_path)
+	#words_generator = data_utils.debug_input(FLAGS.train_path)
 	train_input = data_utils.BatchGenerator(FLAGS.train_path)
 	with tf.variable_scope("model", reuse=None):
 		model_train = BinaryClassifier(is_training=True, config=FLAGS)
@@ -105,7 +105,7 @@ with tf.Graph().as_default():
 				iters += input_x.shape[0] # batch_size
 				current_step = sv.global_step.eval(session) 
 
-				next_words = next(words_generator)
+				#next_words = next(words_generator)
 				# Write train summary 
 				if step % 100 == 0:
 					fscoreName, fscoreNoName, auc = data_utils.getStats(input_y, predictions)
@@ -115,7 +115,7 @@ with tf.Graph().as_default():
 					data_utils.write_summary(train_summary_writer, current_step, 
 						{"fscoreName":fscoreName, "fscoreNoName":fscoreNoName, "auc":auc, "loss":loss})
 					# DEBUG INPUT
-					print(next_words)
+					#print(next_words)
 					print(input_y)
 					print(predictions)
 
