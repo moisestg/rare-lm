@@ -88,7 +88,7 @@ class MultilayerLSTM(object):
 			self.loss_name = loss_name = tf.reduce_mean(losses_name)
 
 		lamda = 0.0
-		self.loss_sum = lamda * self.loss_name + (1-lamda) * self.cost 
+		self.loss_sum = lamda * self.loss_name + (1.0-lamda) * self.cost 
 
 
 		if not is_training:
