@@ -2,6 +2,7 @@ import tensorflow as tf
 import argparse
 from binaryClassifier import BinaryClassifier
 import data_utils
+import data_utils_name
 import numpy as np
 import time
 import os
@@ -34,6 +35,7 @@ for flag in flags_list:
 
 train_path="../lambada-dataset/capitalized/capitalized_train.txt"
 vocab_size=63687
+dataset = data_utils.LambadaDataset()
 word2id, id2word = dataset.get_vocab(train_path, vocab_size)
 train_data = dataset.get_train_data(train_path, word2id)
 train_input = dataset.get_train_batch_generator(config=FLAGS, data=train_data)
