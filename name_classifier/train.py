@@ -40,7 +40,7 @@ vocab_size=63687
 dataset = data_utils_old.LambadaDataset()
 word2id, id2word = dataset.get_vocab(train_path, vocab_size)
 train_data = dataset.get_train_data(train_path, word2id)
-train_input = dataset.get_train_batch_generator(config=FLAGS, data=train_data)
+train_input_name = dataset.get_train_batch_generator(config=FLAGS, data=train_data)
 
 # Define graph
 with tf.Graph().as_default():
@@ -99,7 +99,7 @@ with tf.Graph().as_default():
 			# Iterate through all batches (one epoch)
 			for step in range(train_input.epoch_size): 
 				
-				_, words_y = train_input.get_batch()
+				_, words_y = train_input_name.get_batch()
 				input_x, input_y = train_input.getBatch()
 				feed_dict = {
 					model_train.input_x: input_x,
