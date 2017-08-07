@@ -38,9 +38,9 @@ FLAGS.num_steps=35
 train_path="../lambada-dataset/capitalized/capitalized_train.txt"
 vocab_size=63687
 dataset = data_utils_old.LambadaDataset()
-word2id, id2word = data_utils_old.get_vocab(train_path, vocab_size)
-train_data = data_utils_old.get_train_data(train_path, word2id)
-train_input = data_utils_old.get_train_batch_generator(config=FLAGS, data=train_data)
+word2id, id2word = dataset.get_vocab(train_path, vocab_size)
+train_data = dataset.get_train_data(train_path, word2id)
+train_input = dataset.get_train_batch_generator(config=FLAGS, data=train_data)
 
 # Define graph
 with tf.Graph().as_default():
