@@ -33,6 +33,8 @@ flags_list = sorted(vars(FLAGS))
 for flag in flags_list:
 	print("  --"+flag+"="+str(getattr(FLAGS, flag)))
 
+FLAGS.batch_size=64
+FLAGS.num_steps=35
 train_path="../lambada-dataset/capitalized/capitalized_train.txt"
 vocab_size=63687
 dataset = data_utils.LambadaDataset()
