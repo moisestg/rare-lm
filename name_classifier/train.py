@@ -124,7 +124,8 @@ with tf.Graph().as_default():
 					data_utils.write_summary(train_summary_writer, current_step, 
 						{"fscoreName":fscoreName, "fscoreNoName":fscoreNoName, "auc":auc, "loss":loss})
 					# DEBUG INPUT
-					print("Accuracy: "+str(sum(input_y==predictions)/len(input_y)*100))
+					print("Accuracy names: "+str(  sum([1 if input_y[i]==predictions[i] and predictions[i]==1 else 0 for i in range(len(input_y))])/sum(input_y)*100  ) )
+					print([id2word[i] for i in words_y.reshape(-1)[input_y==1]])
 					print([id2word[i] for i in words_y.reshape(-1)[predictions==1]])
 
 				# Eval on dev set
