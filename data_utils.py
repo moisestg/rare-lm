@@ -667,7 +667,7 @@ def eval_outputs(session, model, input_data, summary_writer=None):
 class LambadaDataset(object):
 
 	def tokenizer(self, line):
-		return line.strip().split(" ")
+		return line.strip().split()
 
 	def get_vocab(self, train_path, vocab_size):
 		return get_vocab(train_path, vocab_size, self.tokenizer, use_unk=True)
