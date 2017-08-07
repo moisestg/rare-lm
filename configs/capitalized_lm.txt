@@ -1,6 +1,6 @@
 --emb_size=200
 --pretrained_emb=word2vec
---vocab_size=54843
+--vocab_size=63687
 --num_layers=1
 --hidden_size=512
 --num_steps=35
@@ -16,4 +16,4 @@
 --train_path=./lambada-dataset/capitalized/capitalized_train.txt
 --dev_path=./lambada-dataset/capitalized/capitalized_smalltest.txt
 --test_path=./lambada-dataset/capitalized/capitalized_train.txt
---model_path=./runs/1501231530/checkpoints/model-330000
+--model_path=./runs/1501506619/checkpoints/model-90000
