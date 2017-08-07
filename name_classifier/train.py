@@ -32,7 +32,11 @@ flags_list = sorted(vars(FLAGS))
 for flag in flags_list:
 	print("  --"+flag+"="+str(getattr(FLAGS, flag)))
 
-#x,y = batchGenerator.getBatch()
+train_path="../lambada-dataset/capitalized/capitalized_train.txt"
+vocab_size=63687
+word2id, id2word = dataset.get_vocab(train_path, vocab_size)
+train_data = dataset.get_train_data(train_path, word2id)
+train_input = dataset.get_train_batch_generator(config=FLAGS, data=train_data)
 
 # Define graph
 with tf.Graph().as_default():
@@ -91,6 +95,7 @@ with tf.Graph().as_default():
 			# Iterate through all batches (one epoch)
 			for step in range(train_input.epoch_size): 
 				
+				_, words_y = train_input.get_batch()
 				input_x, input_y = train_input.getBatch()
 				feed_dict = {
 					model_train.input_x: input_x,
@@ -115,9 +120,8 @@ with tf.Graph().as_default():
 					data_utils.write_summary(train_summary_writer, current_step, 
 						{"fscoreName":fscoreName, "fscoreNoName":fscoreNoName, "auc":auc, "loss":loss})
 					# DEBUG INPUT
-					#print(next_words)
-					print(input_y)
-					print(predictions)
+					print("Accuracy: "+str(sum(input_y==predictions)/len(input_y)*100))
+					print([id2word[i] for i in words_y.reshape(-1)[predictions==1]])
 
 				# Eval on dev set
 				if current_step % FLAGS.evaluate_every == 0:
