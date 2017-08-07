@@ -1,8 +1,8 @@
 import tensorflow as tf
 import argparse
 from binaryClassifier import BinaryClassifier
+import data_utils_old
 import data_utils
-import data_utils_name
 import numpy as np
 import time
 import os
