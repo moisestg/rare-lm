@@ -217,7 +217,7 @@ def output_names(train_path):
 	epoch_size = (batch_len - 1) // num_steps
 
 	for i in itertools.cycle(range(epoch_size)):	
-		y_batch = output[:, i*num_steps+1:(i+1)*num_steps+1] #.reshape([-1])
+		y_batch = output[:, i*num_steps+1:(i+1)*num_steps+1].reshape([-1])
 		yield y_batch
 
 def getStats(y_true, y_pred):
