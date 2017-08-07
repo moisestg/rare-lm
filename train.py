@@ -163,6 +163,7 @@ with tf.Graph().as_default():
 					fscoreName, fscoreNoName, auc = data_utils.getStats(name_y, predictions_name)
 					print("fscoreName: %.3f, fscoreNoName: %.3f, auc: %.3f, loss: %.3f" %
 								(fscoreName, fscoreNoName, auc, loss_sum))
+					print([id2word[i] for i in input_y.reshape(-1)[name_y==1]])
 
 				# Write train summary 
 				if step % 1000 == 0: # (model_train.input.epoch_size // 10) == 10
