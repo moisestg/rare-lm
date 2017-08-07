@@ -87,10 +87,9 @@ class MultilayerLSTM(object):
 			losses_name = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=self.logits_name, labels=self.name_y)
 			self.loss_name = loss_name = tf.reduce_mean(losses_name)
 
-		if True:
-			self.loss_sum = self.cost
-		else:
-			self.loss_sum = self.loss_name
+		lamda = 0.0
+		self.loss_sum = lamda * self.loss_name + (1-lamda) * self.cost 
+
 
 		if not is_training:
 			return
