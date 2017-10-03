@@ -1,9 +1,0 @@
---hidden_size=512
---learning_rate=1e-3
---num_epochs=10
---evaluate_every=10000
---checkpoint_every=10000
---train_path=capitalized_train
---dev_path=capitalized_dev
---test_path=capitalized_test
---model_path=./runs/1501231530/checkpoints/model-330000

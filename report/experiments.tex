@@ -1,0 +1,31 @@
+\chapter{Experiments and Results}
+
+experiments... \todo{Finish experiments and results}
+
+\begin{equation}
+\begin{split}
+  \mathcal{L}=-\sum_{n} \log(P(name|h_t)P(w_t|h_t, name) + (1-P(name|h_t))P(w_t|h_t, notName)) \\
+   + \lambda(y_{name}\log(P(name|h_t)) + (1 - y_{name})\log(1-P(name|h_t))
+\end{split}
+\end{equation}
+
+\begin{table}[]
+	\centering
+	\begin{tabular}{cc|c|c|c|c|}
+		\cline{3-6}
+		\multicolumn{1}{l}{}                                                    & \multicolumn{1}{l|}{}   & \multicolumn{2}{c|}{All} & \multicolumn{2}{c|}{Names} \\ \cline{3-6} 
+		&                         & Train       & Dev        & Train        & Dev         \\ \hline
+		\multicolumn{1}{|c|}{\multirow{2}{*}{Basic}}                            & Baseline                & 42.5        & 61.5       & 1000         & 130K        \\ \cline{2-6} 
+		\multicolumn{1}{|c|}{}                                                  & Mixture ($\lambda=100$) & 55          & 69         & 4000         & 120K        \\ \hline
+		\multicolumn{1}{|c|}{\multirow{2}{*}{Input dropout}}                    & Baseline                & 52.5        & 63         & 2000         & 140K        \\ \cline{2-6} 
+		\multicolumn{1}{|c|}{}                                                  & Mixture ($\lambda=100$) & 65          & 72         & 8000         & 120K        \\ \hline
+		\multicolumn{1}{|c|}{\multirow{2}{*}{State dropout}}                    & Baseline                & 48          & 62.5       & 1000         & 120K        \\ \cline{2-6} 
+		\multicolumn{1}{|c|}{}                                                  & Mixture ($\lambda=100$) & 62.5        & 73         & 6000         & 120K        \\ \hline
+		\multicolumn{1}{|c|}{\multirow{2}{*}{Output dropout}}                   & Baseline                & 62.5        & 65         & 5000         & 150K        \\ \cline{2-6} 
+		\multicolumn{1}{|c|}{}                                                  & Mixture ($\lambda=100$) & 80          & 73         & 20K          & 80K         \\ \hline
+		\multicolumn{1}{|c|}{\multirow{2}{*}{L2 regularization ($\beta=0.01$)}} & Baseline                & 100         & 125        & 10K          & 400K        \\ \cline{2-6} 
+		\multicolumn{1}{|c|}{}                                                  & Mixture ($\lambda=100$) & 107.5       & 119        & 8000         & 120K        \\ \hline
+	\end{tabular}
+	\caption{Perplexity}
+	\label{my-label}
+\end{table}
