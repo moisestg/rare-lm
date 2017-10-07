@@ -6,7 +6,7 @@
 
 
 %% We use the memoir class because it offers a many easy to use features.
-\documentclass[11pt,a4paper,titlepage]{memoir}
+\documentclass[11pt,a4paper,oneside]{memoir}
 
 %% Packages
 %% ========
@@ -44,6 +44,7 @@
 
 %% LaTeX' own graphics handling
 \usepackage{graphicx}
+\graphicspath{ {img/} }
 
 %% We unfortunately need this for the Rules chapter.  Remove it
 %% afterwards; or at least NEVER use its underlining features.
@@ -52,11 +53,14 @@
 %% This allows you to add .pdf files. It is used to add the
 %% declaration of originality.
 \usepackage{pdfpages}
-\usepackage{todonotes}
-\usepackage{multirow}
 
 %% MOI: my packages
 \usepackage{lmodern}
+\usepackage{todonotes}
+\usepackage{multirow}
+\usepackage{multicol}
+\usepackage{caption}
+\usepackage{float}
 
 %% Some more packages that you may want to use.  Have a look at the
 %% file, and consult the package docs for each.
