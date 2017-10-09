@@ -1,4 +1,12 @@
 \begin{abstract}
-  \todo{First paragraph, high level description of the problem. Check project proposal!}\par
-  \todo{Describe thesis approach, mention lambada maybe}
+  \todo{First paragraph, high level description of the problem. Check project proposal! \\
+	- Describe thesis approach, mention lambada maybe \\
+	- What focus for the abstact? Still focus on discourse?}
+  
+Discourse understanding summarizes a speaker’s ability to perform multi-sentence reasoning. This in turn requires temporal reasoning, resolving co-reference chains, identifying named entities and keeping track of the state of a conversation. In language modeling, the de-facto standard task for text generation systems, deep neural network have become the state of the art. Attempts to transfer similar architectures to a dialogue task directly, have revealed the lack of a rigorous evaluation metric 
+
+As a middle ground, newly released datasets try to cast existing NLP problems in a discourse context. For example, collects hard word-prediction tasks to put to the test genuine understanding of language models. To succeed on this task, a language model cannot simply rely on local context, but must be able to keep track of information in the broader discourse. However, the established evaluation methodologies from language modeling still apply. 
+  
+Previous work like have shown that plain RNNs’ memory representation may not be enough to effectively capture long term dependencies. Thus, several approaches have been proposed to tackle this problem: attention , memory networks or latent variable RNNs, among others. In this thesis we implement several baselines of enhanced language models using some of the aforementioned techniques and evaluate them on hard-word prediction tasks like. Based on our empirical findings, we propose and compare extensions to tackle the identified shortcomings.
+  
 \end{abstract}

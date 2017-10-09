@@ -37,13 +37,13 @@ If now we decompose the joint probability of a sequence using the chain rule of 
 
 \begin{equation} \label{eq:lm}
 	\begin{gathered}
-		P(w_1, \ldots ,w_n)=P(w_1)P(w_2|w_1)P(w_3|w_{1}^{2}) \ldots P(w_n|w_{1}^{n-1}) \\
-		= \prod_{k=1}^{n} P(w_k|w_{1}^{k-1})
+		p(w_1, \ldots ,w_n)=p(w_1)p(w_2|w_1)p(w_3|w_{1}^{2}) \ldots p(w_n|w_{1}^{n-1}) \\
+		= \prod_{k=1}^{n} p(w_k|w_{1}^{k-1})
 	\end{gathered}
 \end{equation}
 
 \begin{equation} \label{eq:markov}
-	P(w_k|w_{1}^{k-1}) \approx P(w_k|w_{k-1}^{k-n})
+	p(w_k|w_{1}^{k-1}) \approx p(w_k|w_{k-1}^{k-n})
 \end{equation}
 
 \subsection{Evaluation}
@@ -52,46 +52,46 @@ Following a common practice in machine learning, we use a test set in order to e
 
 \begin{equation} \label{eq:pp}
 	\begin{gathered}
-		\text{Perplexity}(W_1^n) = P(W_1^n)^{-\frac{1}{n}} = \sqrt[n]{\frac{1}{P(W_1^n)}} \\
-		= \sqrt[n]{\frac{1}{\prod_{k=1}^{n} P(w_k|W_{1}^{k-1})}}
+		\text{Perplexity}(W_1^n) = p(W_1^n)^{-\frac{1}{n}} = \sqrt[n]{\frac{1}{p(W_1^n)}} \\
+		= \sqrt[n]{\frac{1}{\prod_{k=1}^{n} p(w_k|W_{1}^{k-1})}}
 	\end{gathered}
 \end{equation}
 
 Moreover, we can regard language as a source of information and apply the Information Theory toolbox to find a different (and equivalent) interpretation of perplexity. For that we need to introduce the basic concept of \textbf{entropy} (\autoref{eq:entropy} shows its formulation for discrete variables), which measures the expected uncertainty or ``surprise" $S$ of the value of a random variable $X$. Without going into details, it is easy to see that defining uncertainty as the negative logarithm (the specific base doesn't matter, but traditionally it is assumed to be 2) of the probability of each event matches our intuition (like $S(p)>S(q) \ \text{then} \ p<q$).
 
 \begin{equation} \label{eq:entropy}
-	H(X)=\mathbb{E}[S(X)]=-\sum_{x \in \mathcal{X}}P(x)\log_2(P(x)) \quad \text{with} \quad S(\cdot)=-\log_2(\cdot)
+	H(X)=\mathbb{E}[S(X)]=-\sum_{x \in \mathcal{X}}p(x)\log_2(p(x)) \quad \text{with} \quad S(\cdot)=-\log_2(\cdot)
 \end{equation}
 
 A difference when it comes to language is that it involves dealing with sequences $W_1^n$ of discrete random variables. For a given language $L$ we can define the entropy of a variable ranging over all possible sequences of length $n$. To obtain the entropy-per-word we would only need to normalize by $n$ (\autoref{eq:entropySeq}).
 
 \begin{equation} \label{eq:entropySeq}
-	\frac{1}{n} H(W_1^n) = -\frac{1}{n}\sum_{W_1^n \in L}P(W_1^n)\log_2(P(W_1^n))
+	\frac{1}{n} H(W_1^n) = -\frac{1}{n}\sum_{W_1^n \in L}p(W_1^n)\log_2(p(W_1^n))
 \end{equation}
 
 However, in order to calculate the true entropy of a language we need to consider sequences of infinite length (\autoref{eq:trueEntropySeq}). Shannon-McMillan-Breiman theorem states that if the language is regular in certain ways we can take a single long enough sequence instead of summing over all possible sequences (* in \autoref{eq:trueEntropySeq}).
 
 \begin{equation} \label{eq:trueEntropySeq}
 	\begin{gathered}
-		H(L) = -\lim\limits_{n \rightarrow \infty}\frac{1}{n}\sum_{W_1^n \in L}P(W_1^n)\log_2(P(W_1^n))\\
-		\stackrel{*}{=} -\lim\limits_{n \rightarrow \infty}\frac{1}{n}\log_2(P(W_1^n))
+		H(L) = -\lim\limits_{n \rightarrow \infty}\frac{1}{n}\sum_{W_1^n \in L}p(W_1^n)\log_2(p(W_1^n))\\
+		\stackrel{*}{=} -\lim\limits_{n \rightarrow \infty}\frac{1}{n}\log_2(p(W_1^n))
 	\end{gathered}
 \end{equation}
 
-Similarly we have \textbf{cross-entropy} which measures the relative entropy of $P$ with respect to $M$, $P$ being the true probability distribution and $M$ a model (e.g. an approximation) of $P$. After applying Shannon-McMillan-Breiman theorem and assuming that $n$ is large enough, we can see in \autoref{eq:crossEntropy} the final formulation of the cross-entropy, which is used as the default loss function when optimizing neural language models.
+Similarly we have \textbf{cross-entropy} which measures the relative entropy of $p$ with respect to $m$, $p$ being the true probability distribution and $m$ a model (e.g. an approximation) of $p$. After applying Shannon-McMillan-Breiman theorem and assuming that $n$ is large enough, we can see in \autoref{eq:crossEntropy} the final formulation of the cross-entropy, which is used as the default loss function when optimizing neural language models.
 
 \begin{equation} \label{eq:crossEntropy}
 	\begin{gathered}
-		H(P,M) = -\lim\limits_{n \rightarrow \infty}\frac{1}{n}\sum_{W_1^n \in L}P(W_1^n)\log_2(M(W_1^n)) \\
-		\stackrel{*}{=} -\lim\limits_{n \rightarrow \infty}\frac{1}{n}\log_2(M(W_1^n)) \approx -\frac{1}{n}\log_2(M(W_1^n)) \\
-		= -\frac{1}{n}\sum_{k=1}^{n}\log_2(M(w_k|W_{1}^{k-1}))
+		H(P,M) = -\lim\limits_{n \rightarrow \infty}\frac{1}{n}\sum_{W_1^n \in L}p(W_1^n)\log_2(m(W_1^n)) \\
+		\stackrel{*}{=} -\lim\limits_{n \rightarrow \infty}\frac{1}{n}\log_2(m(W_1^n)) \approx -\frac{1}{n}\log_2(m(W_1^n)) \\
+		= -\frac{1}{n}\sum_{k=1}^{n}\log_2(m(w_k|W_{1}^{k-1}))
 	\end{gathered}
 \end{equation}
 
 Finally, we can see in \autoref{eq:relationCrossAndPP} how cross-entropy and perplexity are connected. This relation gives raise to a nice interpretation of perplexity as branching factor: entropy measures uncertainty (in bits, if we use $\log_2$) but in exponentiated form it's measured as the cardinality of a uniform distribution with equivalent uncertainty.
 
 \begin{equation} \label{eq:relationCrossAndPP}
-	\text{Perplexity}(W_1^n) = 2^{\text{cross-entropy}} = 2^{H(P,M)} = M(W_1^n)^{-\frac{1}{n}}
+	\text{Perplexity}(W_1^n) = 2^{\text{cross-entropy}} = 2^{H(p,m)} = m(W_1^n)^{-\frac{1}{n}}
 \end{equation}
 
 \section{Feed-Forward Neural Language Models (FFNLM)}
@@ -116,7 +116,7 @@ Along those lines, the first successful attempt of applying neural networks \cit
 		\begin{gathered}
 		\mathbf{x} = [C(w_{t-1}),C(w_{t-2}),\ldots,C(w_{t-n+1})] \\
 		\mathbf{y} = W\mathbf{x} + U \tanh(H\mathbf{x}+\mathbf{d}) + \mathbf{b} \\
-		P(w_t=i|w_{t-1},\ldots,w_{t-n+1}) = \frac{e^{\mathbf{y}_i}}{\sum_{n}e^{\mathbf{y}_n}} \\
+		\mathbf{\hat{p}}_i=\hat{p}(w_t=i|w_{t-1},\ldots,w_{t-n+1}) = \frac{e^{\mathbf{y}_i}}{\sum_{n}e^{\mathbf{y}_n}} \\
 		\end{gathered}
 		\end{equation}
 	\end{minipage}
@@ -139,39 +139,65 @@ In addition to a simplified architecture and a modified objective, further optim
 
 \begin{equation} \label{eq:ns}
 	\begin{gathered}
-		\mathcal{L}(\theta) = \log(P(w_O|w_I))=\log(\sigma(\mathbf{v}_{w_O}^{\top} \mathbf{v}_{w_I})) + \sum_{i=1}^{k} \log(-\sigma(\mathbf{v}_{w_i}^{\top} \mathbf{v}_{w_I})) \\ 
+		\mathcal{L}(\theta) = \log(P(w_O|w_I))=\log(\sigma(\mathbf{v_{w_O}}^{\top} \mathbf{v_{w_I}})) + \sum_{i=1}^{k} \log(-\sigma(\mathbf{v_{w_i}}^{\top} \mathbf{v_{w_I}})) \\ 
 		\text{with} \quad w_i \sim P_n(w)
 	\end{gathered}
 \end{equation}
 
-Another famous family of word vectors is \textbf{GloVe} \cite{pennington2014glove}, where the objective is a weighted (weighting function $f(\cdot)$) least squares fit of the log-counts (\autoref{eq:glove}). Rather than taking a predictive model approach (like word2vec) to learn their vectors in order to improve their predictive ability, GloVe does dimensionality reduction on the co-occurrence counts matrix $N$. 
+Another famous family of word vectors is \textbf{GloVe} \cite{pennington2014glove}, where the objective is a weighted (weighting function $f(\cdot)$) least squares fit of the log-counts (\autoref{eq:glove}). Rather than taking a predictive model approach to learn their vectors in order to improve their predictive ability (like word2vec), GloVe does dimensionality reduction on the co-occurrence counts matrix $N$. 
 
 \begin{equation} \label{eq:glove}
-	\mathcal{L}(\theta, N) = \sum_{i,j:N_{ij}>0}f(N_{ij})(\log(N_{ij})-(\mathbf{v}_{w_O}^{\top} \mathbf{v}_{w_I} + b_O + b_I))^2
+	\mathcal{L}(\theta, N) = \sum_{i,j:N_{ij}>0}f(N_{ij})(\log(N_{ij})-(\mathbf{v_{w_O}}^{\top} \mathbf{v_{w_I}} + b_O + b_I))^2
 \end{equation}
 
-In summary, word vectors have become a standard in NLP and are used as input in all sorts of downstream tasks such as sentiment analysis.
+In summary, word vectors have become a standard in NLP and are used as input in all sorts of downstream applications such as sentiment analysis.
 
-\section{Recurrent Neural Language Models (RNNLM)}
-\label{sec:lstm}
+\section{Recurrent Neural Language Models (RNLM)}
+\label{sec:rnn}
 
-he \cite{hochreiter1997long} as in 
+So far all the models that we have seen (n-grams and FFNLM) have to explicitly use a fixed length context. Recurrent neural networks remove this limitation by introducing recurrent connections that allow information to cycle for an arbitrarily long time (although this is not true in practice). They learn to compress the whole
+history in low dimensional space (hidden state $\mathbf{h_t}$) that is sequentially updated by being blended with the current input (\autoref{eq:rnncell}).   \cite{mikolov2010recurrent}  was one of the first to successfully apply RNNs to language modeling.
 
-\noindent\begin{minipage}{.4\linewidth}
-	\begin{equation} \label{eq:rnncell}
-		\mathbf h_t = \sigma(W \mathbf x_t + U \mathbf h_{t-1})
-	\end{equation}
-\end{minipage}
-\hspace{1cm}
-\begin{minipage}{.5\linewidth}
-	\begin{equation} \label{eq:lstmcell}
-		\begin{gathered}
-			\mathbf{f}_t = \sigma_g(W_f \mathbf{h}_{t-1} + U_f\mathbf{x}_t + \mathbf{b}_f) \\
-			\mathbf{i}_t = \sigma_g(W_i \mathbf{h}_{t-1} + U_i \mathbf{x}_t + \mathbf{b}_i) \\
-			\mathbf{o}_t = \sigma_g(W_o \mathbf{h}_{t-1} + U_o \mathbf{x}_t + \mathbf{b}_o) \\
-			\mathbf{\tilde{c}}_t = \sigma_c(W_c \mathbf{h}_{t-1} + U_c \mathbf{x}_t + \mathbf{b}_c) \\
-			\mathbf{c}_t = \mathbf{f}_{t} \odot \mathbf{c}_{t-1} + \mathbf{i}_{t} \odot \mathbf{\tilde{c}}_t \\
-			\mathbf{h}_t = \mathbf{o}_{t} \odot \sigma_h(\mathbf{c}_{t})\\
-		\end{gathered}
-	\end{equation}
-\end{minipage}
+\begin{equation} \label{eq:rnncell}
+	\begin{gathered}
+		\mathbf{h}(t) = \sigma_h(W_h \mathbf{x}(t) + U_h \mathbf{h}(t-1) + \mathbf{b_h}) \\
+		\mathbf{y}(t) = W_y \mathbf{h}(t) + \mathbf{b_y} \\
+		\mathbf{\hat{p}}(t)_i= \hat{p}(w_t=i|\mathbf{h}(t)) = \frac{e^{\mathbf{y}(t)_i}}{\sum_{n}e^{\mathbf{y}(t)_n}} \\
+	\end{gathered}
+\end{equation}
+
+\subsection{Backpropagation Through Time (BPTT)}
+
+Backpropagation is the standard training procedure used for neural networks. However when applied to the recurrent connections of an RNN, the gradients will depend on the previous timesteps (up to $t=0$). Thus, we call Backpropagation Through Time (BPTT) to the application of backpropagation on an unrolled RNN, which accounts for this dependencies by summing up the gradients for each time step. In \autoref{eq:bptt} we see an example of this when calculating the gradient for $U_h$.
+
+\begin{equation} \label{eq:bptt}
+\frac{\partial \mathcal{L}(t)}{\partial U_h} = \frac{\partial \mathcal{L}(t)}{\partial \mathbf{\hat{p}}(t)}\frac{\partial \mathbf{\hat{p}}(t)}{\partial \mathbf{h}(t)}\frac{\partial \mathbf{h}(t)}{\partial U_h} = \sum_{k=0}^{t} \frac{\partial \mathcal{L}(t)}{\partial \mathbf{\hat{p}}(t)}\frac{\partial \mathbf{\hat{p}}(t)}{\partial \mathbf{h}(t)}\frac{\partial \mathbf{h}(t)}{\partial \mathbf{h}(k)}\frac{\partial \mathbf{h}(k)}{\partial U_h}
+\end{equation}
+
+One of the main problems of BPTT is the high cost of a single parameter update, which makes it impossible to use for large numbers of iterations. \textbf{Truncated Backpropagation Through Time} (TBPTT), which is a modified version of BPTT, was introduced in \cite{sutskever2013training} to work around this limitation.  where the sequence is processed one timestep at a time, and every $k_1$ timesteps, it runs BPTT for $k_2$ timesteps, so a parameter update can be cheap if $k_2$ is small. Most implementations take $k_1=k_2$.
+
+\subsection{Exploding and Vanishing Gradient}
+
+If input sequences are comprised of thousands of timesteps, then this will be the number of derivatives required for a single weight update. We can see this in \autoref{eq:gradient} by observing that $\frac{\partial \mathbf{h}(t)}{\partial \mathbf{h}(k)}$ is a chain-rule itself. Citing \cite{pascanu2013difficulty}, \textit{``a product of $t-k$ real numbers can shrink to zero or explode to infinity, so does this product of matrices"} and therefore, this can cause gradients to vanish or explode. 
+
+\begin{equation} \label{eq:gradient}
+	\frac{\partial \mathbf{h}(t)}{\partial \mathbf{h}(k)} = \prod_{t \geq i > k} \frac{\partial \mathbf{h}(i)}{\partial \mathbf{h}(i-1)}
+\end{equation}
+
+For exploding gradients, clipping the norm of the gradients to a pre-defined threshold has proven to solve this problem. On the other hand, vanishing gradient translates into gradient contributions from ``far away" steps becoming zero, and thus hindering the learning of long-range dependencies. The most popular solution for this problem has been the introduction of new cell architectures explicitly designed to deal with vanishing gradients such as Long Short-Term Memory (LSTM) \cite{hochreiter1997long} and Gated Recurrent Units (GRU) \cite{cho2014learning}.
+
+\begin{equation} \label{eq:lstmcell}
+	\begin{gathered}
+		\mathbf{f}(t) = \sigma_g(W_f \mathbf{h}(t-1) + U_f\mathbf{x}(t) + \mathbf{b}_f) \\
+		\mathbf{i}(t) = \sigma_g(W_i \mathbf{h}(t-1) + U_i \mathbf{x}(t) + \mathbf{b}_i) \\
+		\mathbf{o}(t) = \sigma_g(W_o \mathbf{h}(t-1) + U_o \mathbf{x}(t) + \mathbf{b}_o) \\
+		\mathbf{\tilde{c}}(t) = \sigma_c(W_c \mathbf{h}(t-1) + U_c \mathbf{x}(t) + \mathbf{b}_c) \\
+		\mathbf{c}(t) = \mathbf{f}(t) \odot \mathbf{c}(t-1) + \mathbf{i}(t) \odot \mathbf{\tilde{c}}(t) \\
+		\mathbf{h}(t) = \mathbf{o}(t) \odot \sigma_h(\mathbf{c}(t))\\
+	\end{gathered}
+\end{equation}
+
+
+We will focus on the LSTM as the GRU cell is just a simplified version of the former. The main differences to a vanilla RNN are the introduction of a cell state $\mathbf{c}_t$ (that acts as internal memory) and gates $\mathbf{f},\mathbf{i},\mathbf{o}$. Gates are a way to optionally let information through and are learnt in such a way that the cell can remember long-range dependencies. As shown in \autoref{eq:lstmcell}, the new cell state is formed by a combination of the previous one weighted by the forget gate $\mathbf{f}(t)$ and the ``newly proposed" state $\mathbf{\tilde{c}}(t)$ weighted by the input gate $\mathbf{i}(t)$.
+
+To sum up, recurrent architectures using LSTM cells have become ubiquitous in a wide range of NLP tasks and are achieving state-of-the-art results in many of them.
