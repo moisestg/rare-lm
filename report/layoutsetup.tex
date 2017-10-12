@@ -17,17 +17,25 @@
 % Chapter style redefinition
 \makeatletter
 
+\makepagestyle{ruledCentered}
 \if@twoside
-  \pagestyle{Ruled}
-  \copypagestyle{chapter}{Ruled}
+\copypagestyle{ruledCentered}{Ruled}
 \else
-  \pagestyle{plain}
-  \copypagestyle{chapter}{plain}
+\copypagestyle{ruledCentered}{ruled}
 \fi
+\makeoddfoot{ruledCentered}{}{\thepage}{}
+\makeevenfoot{ruledCentered}{}{\thepage}{}
+\pagestyle{ruledCentered}
+\copypagestyle{chapter}{ruledCentered}
+
 \makeoddhead{chapter}{}{}{}
 \makeevenhead{chapter}{}{}{}
 \makeheadrule{chapter}{\textwidth}{0pt}
+\copypagestyle{acknowledgements}{empty}
 \copypagestyle{abstract}{empty}
+
+% Same horizontal margins
+\setlrmargins{*}{*}{1}
 
 \makechapterstyle{bianchimod}{%
   \chapterstyle{default}

@@ -1,0 +1,30 @@
+\chapter{Extended Language Models}
+
+In this chapter, 
+
+\todo{Finish this}
+
+\section{Continuous Cache}
+\label{sec:continuousCache}
+
+\cite{grave2016improving}
+
+\section{Pointer Sentinel Mixture Model}
+\label{sec:pointerMixture}
+
+\cite{merity2016pointer}
+
+\begin{equation}
+\mathcal{L}=-\sum_{j} \hat{y_{ij}}\log(p(y_{ij}|x_i)) -\log(g + \sum_{i \in I(y,x)}a_i)
+\end{equation}
+
+\section{Softmax Mixture Model}
+\label{sec:mixtureModel}
+
+\begin{equation}
+	\begin{gathered}
+		\mathcal{L}=-\sum_{n} \log(P(name|h_t)P(w_t|h_t, name) + (1-P(name|h_t))P(w_t|h_t, notName)) \\
+		+ \lambda(y_{name}\log(P(name|h_t)) + (1 - y_{name})\log(1-P(name|h_t)) \\
+	\end{gathered}
+\end{equation}
+

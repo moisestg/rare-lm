@@ -1,7 +1,32 @@
 \chapter{Rare Word Prediction}
 
-bla bla \todo{Finish this}
+This chapter introduces
 
-\begin{equation}
-	\mathcal{L}=-\sum_{j} \hat{y_{ij}}\log(p(y_{ij}|x_i)) -\log(g + \sum_{i \in I(y,x)}a_i)
-\end{equation}
+\todo{Finish this}
+
+\section{Problem Description}
+\label{sec:problemRare}
+
+Talk about the well known problem of static language models and lack of adaptation
+
+\section{The LAMBADA dataset}
+\label{sec:lambada}
+
+This dataset was first introduced in \cite{paperno2016lambada} as a challenging test set specifically designed to probe the genuine language understanding of state-of-the-art NLP models, since in words of the authors \textit{``models' effectiveness at picking statistical generalizations from large corpora can lead to the illusion that they are reaching a deeper degree of understanding than they really are''}. And it does so by casting language understanding in
+the classic word prediction framework of language modeling. An example of the dataset can be seen in \autoref{fig:lambadaPassage}.
+
+\begin{figure}[H]
+	\begin{quote} 		
+		 \textbf{Context:} \textit{``Why?'' ``I would have thought you'd find him rather dry,'' she said. ``I don’t know about that,'' said \underline{Gabriel}. ``He was a great craftsman,'' said Heather. ``That he was,'' said Flannery.} \par
+		\textbf{Target sentence:} \textit{``And Polish, to boot,'' said $\rule{1.2cm}{0.15mm}$} . \par
+		\textbf{Target word:} \textit{Gabriel}
+	\end{quote}
+	\caption{Example of a LAMBADA passage} \label{fig:lambadaPassage}
+\end{figure}
+
+\subsection{Dataset Construction}
+
+LAMBADA was built using the Book Corpus dataset \cite{zhu2015aligning}, which features 5325 unpublished novels and 465 million words. It was divided
+
+\subsection{Analysis}
+
