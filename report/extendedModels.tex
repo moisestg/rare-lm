@@ -9,13 +9,74 @@ In this chapter,
 
 \cite{grave2016improving}
 
-\section{Pointer Sentinel Mixture Model}
+\section{Attention LM}
+\label{sec:attention}
+
+\cite{daniluk2017frustratingly}
+
+\section{Pointer Sentinel Mixture Model (PSMM)}
 \label{sec:pointerMixture}
 
-\cite{merity2016pointer}
+Presented in \cite{merity2016pointer}, this model introduces a pointer network in addition to the usual softmax-RNN component that are dynamically interpolated. More explanation...
+
+\begin{equation} \label{eq:psmmMemory}
+	\begin{gathered}
+		p_{\text{vocab}}(w|x(t)) = \text{softmax}(U\mathbf{h}(t))  \\
+		p_{\text{vocab}}(w=i|x(t)) = \text{softmax}(U\mathbf{h}(t))[i] 
+	\end{gathered}	
+\end{equation}
+
+where $p_{\text{vocab}}(w|x(t)) \in \mathbb{R}^{V}$, $p_{\text{vocab}}(w=i|x(t)) \in \mathbb{R}$ and $U \in \mathbb{R}^{V \times H}$.
+
+$x(t)$ represents the sequence $\{w_1, \cdots , w_t\}$ of the input word IDs up to $t$  and $y(t)$ is the ID of the correct word that has to be predicted, $w_{t+1}$. In theory, the pointer network could range over the whole $x(t)$. However, in practice due to memory limitations we choose to maintain only a window of the $L$ most recent words for the pointer to match against. Thus, we need to keep track of both the hidden states and the respective word IDs inside the window, as shown in \autoref{eq:psmmMemory}.
 
 \begin{equation}
-\mathcal{L}=-\sum_{j} \hat{y_{ij}}\log(p(y_{ij}|x_i)) -\log(g + \sum_{i \in I(y,x)}a_i)
+	\begin{gathered}
+		C = \begin{bmatrix} \mathbf{h}(t), & \cdots, & \mathbf{h}(t-L+1) \end{bmatrix} \\
+		\mathbf{c} = [w_t, \cdots, w_{t-L+1}] \\
+	\end{gathered}
+\end{equation}
+
+where $C \in \mathbb{R}^{H \times L}$ and $\mathbf{c} \in \mathbb{R}^{L}$. In order to compute the attention scores over the window, the easiest way is to compute the dot product between the current hidden state $\mathbf{h}(t)$ and all the hidden states in the window. However the window will also contain $\mathbf{h}(t)$ as this word may be repeated, and as the dot product of a vector with itself results in its magnitude squared, the attention scores would be biased towards the last word. We avoid this by first projecting $\mathbf{h}(t)$ into a query vector $\mathbf{q}$ (\autoref{eq:query}).
+
+\begin{equation} \label{eq:query}
+		\mathbf{q} = \tanh(W\mathbf{h}(t) + \mathbf{b}) 
+\end{equation}
+
+where $\mathbf{q},\mathbf{b} \in \mathbb{R}^{H}$ and $W \in \mathbb{R}^{H \times H}$. 
+
+\begin{equation}
+	\begin{gathered}
+		\mathbf{z} = \mathbf{q}^{\top} C \\
+		\mathbf{a} = \text{softmax}([\mathbf{z}; \mathbf{q}^{\top} \mathbf{s}])
+	\end{gathered}
+\end{equation}
+
+where $\mathbf{z} \in \mathbb{R}^{L}$ and $\mathbf{a} \in \mathbb{R}^{L+1}$
+
+\begin{equation}
+	\begin{gathered}
+		p_{\text{ptr}}(w|x(t)) = \frac{1}{1-g}\mathbf{a}[1:L] \\
+		p_{\text{ptr}}(w=i|x(t)) = \frac{1}{1-g}\sum_{k \in I(i, \; x(t))}\mathbf{a}_k \; \in \; \mathbb{R}
+	\end{gathered}
+\end{equation}
+
+where $p_{\text{ptr}}(w|x(t)) \in \mathbb{R}^{L}$, $p_{\text{ptr}}(w=i|x(t)) \in \mathbb{R}$
+
+\begin{equation}
+	\begin{gathered}
+		p_{\text{mix}}(w=i|x(t)) = g \, p_{\text{vocab}}(w=i|x(t)) + (1-g) \, p_{\text{ptr}}(w=i|x(t)) \\
+		= g \, p_{\text{vocab}}(w=i|x(t)) + \sum_{k \in I(i, \; x(t))}\mathbf{a}_k
+	\end{gathered}
+\end{equation}
+
+Finally the loss of the model is:
+
+\begin{equation}
+	\begin{gathered}
+		\mathcal{L}(\theta) = -\log(p_{\text{mix}}(w=y(t)|x(t)) -\log(g + \sum_{i \in I(y(t), \; x(t))}\mathbf{a}_i) \\
+		= -\log(g \, p_{\text{vocab}}(w=y(t)|x(t)) + \sum_{k \in I(y(t), \; x(t))}\mathbf{a}_k) -\log(g + \sum_{i \in I(y(t), \; x(t))}\mathbf{a}_i)
+	\end{gathered}
 \end{equation}
 
 \section{Softmax Mixture Model}
@@ -23,7 +84,7 @@ In this chapter,
 
 \begin{equation}
 	\begin{gathered}
-		\mathcal{L}=-\sum_{n} \log(P(name|h_t)P(w_t|h_t, name) + (1-P(name|h_t))P(w_t|h_t, notName)) \\
+		\mathcal{L}(\theta) = -\sum_{n} \log(P(name|h_t)P(w_t|h_t, name) + (1-P(name|h_t))P(w_t|h_t, notName)) \\
 		+ \lambda(y_{name}\log(P(name|h_t)) + (1 - y_{name})\log(1-P(name|h_t)) \\
 	\end{gathered}
 \end{equation}

@@ -1,6 +1,6 @@
-\chapter{Neural Language Modeling}
+\chapter{Neural Language Models}
 
-In this chapter, we introduce the notation used throughout the thesis and give a brief overview of the development of neural language modeling (NLM) since its inception. We also review some of the main weaknesses shown by this family of models and how they have been addressed in the literature. 
+In this chapter, we introduce the notation used throughout the thesis and give a brief overview of the development of neural language models (NLM). We also review some of the main weaknesses shown by this family of models and how they have been addressed in the literature. 
 
 \todo{
 	- Finish this (7-8 pages) \\
@@ -14,14 +14,14 @@ In this chapter, we introduce the notation used throughout the thesis and give a
 \section{Notation}
 \label{sec:notation}
 
-Before continuing, we will define the notation used in this thesis:
+Before continuing, we will define the notation used in the thesis:
 
 \begin{itemize}
 	\item Scalars are denoted with lowercase letters, such as $x$.
 	
-	\item Vectors (of size $N$) are denoted with bold lowercase letters, such as $\mathbf{x}$ with $\mathbf{x}_i$ its $i$-th element, and are always assumed to be column vectors.
+	\item Vectors are denoted with bold lowercase letters, such as $\mathbf{x}$ with $\mathbf{x}_i$ its $i$-th element, and are always assumed to be column vectors.
 	
-	\item Matrices (of size $N \times M$) are denoted with uppercase letters, such as $X$ with $X_{ij}$ as its $(i,j)$-th element.
+	\item Matrices are denoted with uppercase letters, such as $X$ with $X_{ij}$ as its $(i,j)$-th element.
 \end{itemize}
 
 \section{Background}
@@ -33,7 +33,7 @@ Prior to introducing the specifics of NLMs, we will formalize the task at hand a
 
 First, we define a \textbf{word-based language model} as a model able to compute the probability of a sentence or sequence of words $p(w_1, \ldots ,w_n)$. Such models are of great use in tasks where we have to recognize words in noisy or ambiguous input such as speech recognition or machine translation, among others.
 
-If we now decompose the joint probability of a sequence using the chain rule of probability as shown in \autoref{eq:lm}, we observe that the function that needs to be estimated boils down to the conditional probability of a word given the history of previous words. However, taking into account the whole context poses a problem as language is creative and any particular sequence might have occurred few (or no) times before.  Many of the models that we will introduce opt to approximate the true conditional distribution by making a Markov assumption as shown in \autoref{eq:markov}. This means that the probability of an upcoming word is fully characterized by the previous $n-1$ words. Despite seeming an incorrect premise for a complex source of information such as language, it has been proven to work really well in practice.
+If we now decompose the joint probability of a sequence using the chain rule of probability as shown in \autoref{eq:lm}, we observe that the function that needs to be estimated boils down to the conditional probability of a word given the history of previous words. However, taking into account the whole context poses a problem as language is creative and any particular sequence might have occurred few (or no) times before.  Many of the models that we will introduce approximate the true conditional distribution by making a Markov assumption as shown in \autoref{eq:markov}. This means that the probability of an upcoming word is fully characterized by the previous $n-1$ words. Despite seeming an incorrect premise for a complex source of information such as language, it has been proven to work really well in practice.
 
 \begin{equation} \label{eq:lm}
 	\begin{gathered}
@@ -48,7 +48,7 @@ If we now decompose the joint probability of a sequence using the chain rule of 
 
 \subsection{Evaluation}
 
-Following a common practice in machine learning, we use a test set in order to evaluate our models. In the case of language modeling we have a word sequence $W_1^n=\{w_1, \ldots , w_n\}$ and the better the model is, the higher the probability assigned to this sequence will be. Rather than working directly with raw probabilities we define a metric called \textbf{perplexity}, which is the geometric average of the inverse of the probability over the test set, as shown in \autoref{eq:pp}. Therefore, lower perplexity is better.
+Following a common practice in machine learning, we use a test set in order to evaluate our models. In the case of language modeling we have a word sequence $W_1^n=\{w_1, \ldots , w_n\}$ and we expect the model to assign it a high probability. Rather than working directly with raw probabilities we define a metric called \textbf{perplexity}, which is the geometric average of the inverse of the probability over the test set, as shown in \autoref{eq:pp}. Therefore, lower perplexity is better.
 
 \begin{equation} \label{eq:pp}
 	\begin{gathered}
@@ -57,7 +57,7 @@ Following a common practice in machine learning, we use a test set in order to e
 	\end{gathered}
 \end{equation}
 
-Moreover, we can regard language as an information source and therefore apply the Information Theory toolbox to find a different (and equivalent) interpretation of perplexity. For that we need to introduce the basic concept of \textbf{entropy} (\autoref{eq:entropy} shows its formulation for discrete variables), which measures the expected uncertainty or ``surprise" $S$ of the value of a random variable $X$. Without going into details, it is easy to see that defining uncertainty as the negative logarithm (the specific base doesn't matter, but traditionally it is assumed to be 2) of the probability of each event matches our intuition (like $S(p)>S(q) \ \text{then} \ p<q$).
+Moreover, we can regard language as an information source and therefore use Information Theory to find a different (and equivalent) interpretation of perplexity. For that we need to introduce the basic concept of \textbf{entropy} (\autoref{eq:entropy} shows its formulation for discrete variables), which measures the expected uncertainty or ``surprise" $S$ of the value of a random variable $X$. Without going into details, it is easy to see that defining uncertainty as the negative logarithm (the specific base doesn't matter, but traditionally it is assumed to be 2) of the probability of each event matches our intuition (like $S(p)>S(q) \ \text{then} \ p<q$).
 
 \begin{equation} \label{eq:entropy}
 	H(X)=\mathbb{E}[S(X)]=-\sum_{x \in \mathcal{X}}p(x)\log_2(p(x)) \quad \text{with} \quad S(\cdot)=-\log_2(\cdot)
@@ -69,7 +69,7 @@ A difference when it comes to language is that it involves dealing with sequence
 	\frac{1}{n} H(W_1^n) = -\frac{1}{n}\sum_{W_1^n \in L}p(W_1^n)\log_2(p(W_1^n))
 \end{equation}
 
-However, in order to calculate the true entropy of a language we would need to consider sequences of infinite length (\autoref{eq:trueEntropySeq}). Additionally, the Shannon-McMillan-Breiman theorem states that if a language is regular in certain ways (stationary and ergodic) we can take a single long enough sequence instead of summing over all possible sequences (* in \autoref{eq:trueEntropySeq}).
+Additionally, in order to calculate the true entropy of a language we would need to consider sequences of infinite length (\autoref{eq:trueEntropySeq}). Fortunately, the Shannon-McMillan-Breiman theorem states that if a stochastic source (such as language) is regular in certain ways (stationary and ergodic) we can take a single long enough sequence instead of summing over all possible sequences (* in \autoref{eq:trueEntropySeq}).
 
 \begin{equation} \label{eq:trueEntropySeq}
 	\begin{gathered}
@@ -78,7 +78,7 @@ However, in order to calculate the true entropy of a language we would need to c
 	\end{gathered}
 \end{equation}
 
-Related to the concept of entropy we have \textbf{cross-entropy}, which measures the relative entropy of $p$ with respect to $m$, $p$ being the true probability distribution and $m$ a model (e.g. an approximation) of $p$ over the same underlying set of events. After applying the Shannon-McMillan-Breiman theorem and assuming that $n$ is large enough, we can see in \autoref{eq:crossEntropy} the final formulation of the cross-entropy, which is used as the default loss function when optimizing neural language models.
+Related to the concept of entropy we have \textbf{cross-entropy}, which measures the relative entropy of $p$ with respect to $m$, $p$ being the true probability distribution and $m$ a model (e.g. an approximation) of $p$ over the same underlying set of events. After applying the Shannon-McMillan-Breiman theorem and assuming that $n$ is large enough, we can see in \autoref{eq:crossEntropy} the final formulation of the cross-entropy, which has become the standard loss function when optimizing neural language models.
 
 \begin{equation} \label{eq:crossEntropy}
 	\begin{gathered}
@@ -88,17 +88,16 @@ Related to the concept of entropy we have \textbf{cross-entropy}, which measures
 	\end{gathered}
 \end{equation}
 
-Finally, we can see in \autoref{eq:relationCrossAndPP} how cross-entropy and perplexity are connected. This relation gives raise to a nice interpretation of perplexity as branching factor: entropy measures uncertainty (in bits, if we use $\log_2$) but in exponentiated form it's measured as the cardinality of a uniform distribution with equivalent uncertainty.
+Finally, we can see in \autoref{eq:relationCrossAndPP} how cross-entropy and perplexity are connected. This relation gives raise to a nice interpretation of perplexity as branching factor: entropy measures uncertainty (in bits, if we use $\log_2$) but in exponentiated form it is measured as the cardinality of a uniform distribution with equivalent uncertainty.
 
 \begin{equation} \label{eq:relationCrossAndPP}
-	\text{Perplexity}(W_1^n) = 2^{\text{cross-entropy}} = 2^{H(p,m)} = m(W_1^n)^{-\frac{1}{n}}
+	\text{Perplexity}(W_1^n) = 2^{H(p,m)} = m(W_1^n)^{-\frac{1}{n}}
 \end{equation}
 
 \section{Feed-Forward Neural Language Models (FFNLM)}
 \label{sec:forwardnlm}
 
-Until the appearance of NLMs, the most successful approaches were based on n-grams, which are Markov models that estimate words from a fixed window of previous
-words and estimate probabilities by counting in a corpus and normalizing. Due to their nature, n-gram estimates intrinsically suffer from sparsity and several methods like smoothing, backoff and interpolation have been proposed to deal with this problem.
+Until the appearance of NLMs, the most successful approaches were based on n-grams, which are models that estimate words from a fixed window of previous words and estimate probabilities by counting in a corpus and normalizing. Due to their nature, n-gram estimates intrinsically suffer from sparsity and several methods like smoothing, backoff and interpolation have been proposed to deal with this problem \cite{goodman2001bit}.
 
 Along those lines, the first successful attempt of applying neural networks to language modeling \cite{bengio2003neural} raised the point that when estimating the joint distribution between many discrete random variables (such as words in a sentence), any change of these variables may have a drastic impact on the value of the modeled function. On the contrary, by using continuous variables we obtain better generalization because the function to be learned can be expected to have some local smoothness properties (``similar" words should get similar probabilities). While taking longer to train, this approach is able to achieve significantly better results by jointly learning word representations and a statistical language model.
 
