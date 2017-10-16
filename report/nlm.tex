@@ -97,81 +97,87 @@ Finally, we can see in \autoref{eq:relationCrossAndPP} how cross-entropy and per
 \section{Feed-Forward Neural Language Models (FFNLM)}
 \label{sec:forwardnlm}
 
-Until the appearance of NLMs, the most successful approaches were based on n-grams, which are models that estimate words from a fixed window of previous words and estimate probabilities by counting in a corpus and normalizing. Due to their nature, n-gram estimates intrinsically suffer from sparsity and several methods like smoothing, backoff and interpolation have been proposed to deal with this problem \cite{goodman2001bit}.
+Until the appearance of NLMs, the most successful approaches were based on n-grams, which are models that estimate words from a fixed window of previous words and estimate probabilities by counting in a corpus and normalizing. Due to their nature, n-gram estimates intrinsically suffer from sparsity and several methods like smoothing, backoff and interpolation have been proposed to deal with this problem \cite{chen1996empirical}.
 
-Along those lines, the first successful attempt of applying neural networks to language modeling \cite{bengio2003neural} raised the point that when estimating the joint distribution between many discrete random variables (such as words in a sentence), any change of these variables may have a drastic impact on the value of the modeled function. On the contrary, by using continuous variables we obtain better generalization because the function to be learned can be expected to have some local smoothness properties (``similar" words should get similar probabilities). While taking longer to train, this approach is able to achieve significantly better results by jointly learning word representations and a statistical language model.
+Along those lines, the first successful attempt of applying neural networks to language modeling \cite{bengio2003neural} remarked the effect of the \textit{curse of dimensionality} when it comes to estimating the joint distribution of many discrete random variables (such as words in a sentence). On the contrary, by using continuous variables we obtain better generalization because the function to be learned can be expected to have some local smoothness properties (``similar" words should get similar probabilities of being predicted). While requiring to be trained (n-grams don't), this approach is able to achieve significantly better results (reductions between 10\% and 20\% in perplexity with respect to a smoothed trigram model) by jointly learning word representations and a statistical language model.
+
+Similar to n-grams, the model introduced in \cite{bengio2003neural} conditions the probability of a word on the previous $n-1$ words. The main difference lies in the concept of \textbf{distributed feature vectors}; words are embedded into a vector-space by assigning them a real vector representation of size $m$ via a look-up operation over the embedding matrix $C$ as shown in \autoref{eq:fwnlm}. 
+
+\begin{equation} \label{eq:fwnlm}
+	\begin{gathered}
+		\mathbf{x} = [C_{w_{t-1},:} \, , C_{w_{t-2},:} \, , \cdots \, , C_{w_{t-n+1},:})] \\
+		\mathbf{y} = W\mathbf{x} + U \tanh(H\mathbf{x}+\mathbf{d}) + \mathbf{b} \\
+		\hat{p}(w_t=i|w_{t-1},\ldots,w_{t-n+1}) = \frac{e^{\mathbf{y}_i}}{\sum_{n}e^{\mathbf{y}_n}} \\
+	\end{gathered}
+\end{equation}
+
+where $C \in \mathbb{R}^{|V| \times m}$, $\mathbf{x} \in \mathbb{R}^{1 \times (n-1)m}$, $W \in \mathbb{R}^{|V| \times (n-1)m}$, $U \in \mathbb{R}^{|V| \times h}$, $H \in \mathbb{R}^{h \times (n-1)m}$, $\mathbf{d} \in \mathbb{R}^{h}$ and $\mathbf{y} ,\mathbf{b} \in \mathbb{R}^{|V|}$. The concatenated word representations $\mathbf{x}$ are fed through one (or more) nonlinear hidden layer (weights $H$ and bias $\mathbf{d}$), resulting in a hidden representation of size $h$. We then apply an affine transformation (weights $U$ and bias $\mathbf{b}$) to this hidden representation to obtain $\mathbf{y}$, an unnormalized probability distribution over the vocabulary $V$. Optionally, we can include direct connections from the word features to the output ($W$). Finally, a softmax operation produces a valid probability distribution over the full vocabulary.
 
 \begin{figure}[H]
-	\noindent\begin{minipage}{.4\linewidth}
-		\centering
-		\includegraphics[scale=0.4]{fflm}
-		\captionof{figure}{Feed-Forward NLM architecture}
-		\label{fig:ffarch}
-	\end{minipage}
-	\hspace{0.25cm}
-	\begin{minipage}{.7\linewidth}	
-		\begin{equation} \label{eq:fwnlm}
-		\openup 2ex
-		\begin{gathered}
-		\mathbf{x} = [C(w_{t-1}),C(w_{t-2}),\ldots,C(w_{t-n+1})] \\
-		\mathbf{y} = W\mathbf{x} + U \tanh(H\mathbf{x}+\mathbf{d}) + \mathbf{b} \\
-		\mathbf{\hat{p}}_i=\hat{p}(w_t=i|w_{t-1},\ldots,w_{t-n+1}) = \frac{e^{\mathbf{y}_i}}{\sum_{n}e^{\mathbf{y}_n}} \\
-		\end{gathered}
-		\end{equation}
-	\end{minipage}
+	\centering
+	\includegraphics[scale=0.5]{fflm}
+	\captionof{figure}{Feed-Forward NLM architecture \cite{bengio2003neural}}
+	\label{fig:ffarch}
 \end{figure}
 
-Similar to n-grams, the model introduced in \cite{bengio2003neural} conditions the probability of a word on the previous $n-1$ words. The main difference lies in the concept of \textbf{distributed feature vectors}; words are embedded into a vector-space by assigning them a continuous real-vector representation. As seen in \autoref{fig:ffarch}, this is done via a look-up operation over the embedding matrix $C$. The concatenated word representations are then fed through one or more non-linear hidden layers and the resulting hidden representation is used to generate the unscaled log probabilities with a fully connected layer. Finally, a softmax operation produces a valid probability distribution over the full vocabulary.
+Having a look at the full model (shown in \autoref{fig:ffarch}) we can observe that most expensive operation is the computation of the unnormalized probability distribution $\mathbf{y}$, which requires a number of dot products that scales linearly with $|V|$ (it is not unusual to work with vocabulary sizes in the order of the tens of thousands). 
 
-\todo{Dissect formulas a bit more? Discuss dimensions of parameters and so on?}
+Several practical solutions have been proposed to avoid it, with \textbf{hierarchical softmax} \cite{morin2005hierarchical} being one of the most popular ones. It uses a hierarchical binary tree representation of the vocabulary with words as
+its leaves and, for each node, explicitly represents the relative probabilities of its child nodes. These define a random walk that assigns probabilities to words, allowing to reduce the complexity of obtaining the output probability of a single word to around $\log_2(|V|)$.
 
 \section{Word Vectors}
 \label{sec:wv}
 
-As we have seen in the previous section, distributed continuous vectors allow for ``clever" smoothing by taking into account syntactic and semantic features that are automatically learnt. \cite{mikolov2013efficient} picked up on this concept trying to find ways of training these vector representations more efficiently. The paper introduces a family of models known as \textbf{word2vec}, whose architecture matches the one from a FFNLM where the non-linear hidden layer has been removed (ending up with a simple log bilinear model). The difference between them lies on the ``fake" objective (fake in the sense that we are only interested in the resulting embeddings and not the actual outputs of the model) they optimize for learning the word embeddings:
+As we stated in the previous section, distributed continuous vectors allow for ``clever" smoothing by taking into account syntactic and semantic features that are automatically learnt. \cite{mikolov2013efficient} picked up on this concept trying to find ways of training these vector representations more efficiently. The paper introduces a family of models known as \textbf{word2vec}, whose architecture matches the one from a FFNLM where the nonlinear hidden layer has been removed (ending up with a simple log bilinear model). The difference between them lies on the objective they optimize for. It is important to note that these objectives are designed as a mean to learn meaningful word embeddings, which are the main focus of the following architectures:
 
 \begin{itemize}
-	\item Continuous Bag-of-Words model (CBOW): given a symmetric window of size $k$ around a specific position $i$ $\{w_{i-k}, \ldots , w_{i-1}, w_{i+1}, \ldots w_{i+k}\}$, we want to predict that word $w_i$. The term ``bag-of-words" comes from the fact that the embeddings of the whole window are summed (instead of concatenated) and thus, order is not kept anymore.
+	\item Continuous Bag-of-Words model (CBOW): given a symmetric window of size $k$ around a specific position $i$ $\{w_{i-k}, \ldots , w_{i-1}, w_{i+1}, \ldots w_{i+k}\}$, we want to predict the word $w_i$. The term ``bag-of-words" comes from the fact that the embeddings of the whole window are summed (instead of concatenated) and thus, order is not preserved.
 	
-	\item Continuous Skip-Gram model: given a specific position $i$ we randomly sample words inside its surrounding window and try to predict them. Therefore, each training example is a tuple consisting of $w_i$ as input and a sampled word from the window as output.
+	\item Continuous Skip-Gram model: given a specific position $i$ we randomly sample words inside its surrounding window and try to predict them. Therefore, each training example is a 2-tuple consisting of $w_i$ as input and a sampled word from the window as output.
 \end{itemize}
 
-In addition to a simplified architecture and a modified objective, further optimizations for the Skip-Gram model were introduced in a follow-up paper \cite{mikolov2013distributed}. As we already saw in \autoref{eq:fwnlm}??, most of the computation is done in the softmax operation over the full vocabulary. In order to avoid this, we cast our task to a binary classification problem by making use of a new objective named \textbf{negative sampling}. Inspired by noise contrastive estimation (NCE), the objective is to distinguish the target word $w_O$ from draws from a noise distribution $P_n(w)$ (e.g. unigram distribution) using logistic regression, where there are $k$ noise samples for each data point (\autoref{eq:ns}).
+In addition to a simplified architecture and a modified objective, further optimizations for the Skip-Gram model were introduced in a follow-up paper \cite{mikolov2013distributed}. As we already explained at the end of the previous section, calculating a probability distribution over the full vocabulary is computation-intensive. In order to avoid doing this, the original task is casted into a binary classification problem by making use of a new objective named \textbf{negative sampling}. Inspired by noise contrastive estimation (NCE), the objective is to distinguish the target word $w_O$ from draws coming from a noise distribution $p_n(w)$ (e.g. unigram distribution) using logistic regression, where there are $k$ noise samples for each data point (\autoref{eq:ns}).
 
 \begin{equation} \label{eq:ns}
 	\begin{gathered}
-		\mathcal{L}(\theta) = \log(P(w_O|w_I))=\log(\sigma(\mathbf{v_{w_O}}^{\top} \mathbf{v_{w_I}})) + \sum_{i=1}^{k} \log(-\sigma(\mathbf{v_{w_i}}^{\top} \mathbf{v_{w_I}})) \\ 
-		\text{with} \quad w_i \sim P_n(w)
+		\mathcal{L}(\theta) = \log(\sigma(\mathbf{v_{w_O}}^{\top} \mathbf{v_{w_I}})) + \sum_{i=1}^{k} \log(-\sigma(\mathbf{v_{w_i}}^{\top} \mathbf{v_{w_I}})) \\ 
+		\text{with} \quad w_i \sim p_n(w)
 	\end{gathered}
 \end{equation}
 
-Another famous family of word vectors is \textbf{GloVe} \cite{pennington2014glove}, where the objective is a weighted (weighting function $f(\cdot)$) least squares fit of the log-counts (\autoref{eq:glove}). Rather than taking a predictive model approach to learn their vectors in order to improve their predictive ability (like word2vec), GloVe does dimensionality reduction on the co-occurrence counts matrix $N$. 
+Another famous family of word vectors is \textbf{GloVe} \cite{pennington2014glove}, where the objective is a weighted (weighting function $f(\cdot)$) least squares fit of the log-counts (\autoref{eq:glove}). Rather than capturing co-occurences one word at a time (like word2vec), GloVe does dimensionality reduction on the whole co-occurrence counts matrix $N$. 
 
 \begin{equation} \label{eq:glove}
 	\mathcal{L}(\theta, N) = \sum_{i,j:N_{ij}>0}f(N_{ij})(\log(N_{ij})-(\mathbf{v_{w_O}}^{\top} \mathbf{v_{w_I}} + b_O + b_I))^2
 \end{equation}
+
+In general, word vectors have proven to excel at capturing semantic features. For example, \cite{mikolov2013efficient} analyzes how Skip-Gram vectors achieve very good results on the semantic word relationship task. Furthermore, the authors qualitatively explore how the resulting vector representations encode semantic information in the affine embedding structure. Hence, a vector operation like $\textit{Spain}-\textit{Madrid}+\textit{Switzerland}$ would lead to the desired answer $\textit{Bern}$.
 
 In summary, word vectors have become a standard in NLP and are used as input in all sorts of downstream applications such as sentiment analysis.
 
 \section{Recurrent Neural Language Models (RNLM)}
 \label{sec:rnn}
 
-So far all the models that we have seen (n-grams and FFNLM) have to explicitly use a fixed length context. Recurrent neural networks remove this limitation by introducing recurrent connections that allow information to cycle for an arbitrarily long time (although this is not true in practice). They learn to compress the whole
-history in low dimensional space (hidden state $\mathbf{h_t}$) that is sequentially updated by being blended with the current input (\autoref{eq:rnncell}).   \cite{mikolov2010recurrent}  was one of the first to successfully apply RNNs to language modeling.
-
-\todo{Say what is $\sigma_h$, where does it fit best?}
+So far all the models that we have seen (n-grams and FFNLM) explicitly use a fixed length context. Recurrent neural networks remove this limitation by introducing recurrent connections that allow information to cycle for an arbitrarily long time (although this is not true in practice). They learn to compress the whole history in low dimensional space (hidden state $\mathbf{h}(t)$) that is sequentially updated by being blended with the current input $\mathbf{x}(t)$ (\autoref{eq:rnncell} introduces the formulation for Elman networks).
 
 \begin{equation} \label{eq:rnncell}
+		\mathbf{h}(t) = \sigma_h(W_h \mathbf{x}(t) + U_h \mathbf{h}(t-1) + \mathbf{b_h})
+\end{equation}
+
+where $W_h \in \mathbb{R}^{h \times m}$, $\mathbf{x}(t) \in \mathbb{R}^{m}$, $U_h \in \mathbb{R}^{h \times h} , \mathbf{h}(t), \mathbf{h}(t-1), \mathbf{b_h} \in \mathbb{R}^{h}$ and $\sigma_h$ is a nonlinear function (e.g. sigmoid). It is important to note that the network parameters are shared over time. \cite{mikolov2010recurrent} was one of the first to successfully apply RNNs to language modeling. The hidden states $\mathbf{h}(t)$ are fed through a fully connected layer to produce a probability distribution over the vocabulary in a similar way to FFNLM.
+
+\begin{equation} \label{eq:rnnlm}
 	\begin{gathered}
-		\mathbf{h}(t) = \sigma_h(W_h \mathbf{x}(t) + U_h \mathbf{h}(t-1) + \mathbf{b_h}) \\
 		\mathbf{y}(t) = W_y \mathbf{h}(t) + \mathbf{b_y} \\
-		\mathbf{\hat{p}}(t)_i= \hat{p}(w_t=i|\mathbf{h}(t)) = \frac{e^{\mathbf{y}(t)_i}}{\sum_{n}e^{\mathbf{y}(t)_n}} \\
+		\hat{p}(w_t=i|\mathbf{h}(t)) = \frac{e^{\mathbf{y}(t)_i}}{\sum_{n}e^{\mathbf{y}(t)_n}} \\
 	\end{gathered}
 \end{equation}
 
+where $W_y \in \mathbb{R}^{|V| \times h}$ and $\mathbf{y}(t)$, $\mathbf{b_y} \in \mathbb{R}^{|V|}$.
+
 \subsection{Backpropagation Through Time (BPTT)}
 
-Backpropagation is the standard training procedure used for neural networks. However when applied to the recurrent connections of an RNN, the gradients will depend on the previous timesteps (up to $t=0$). Thus, we call Backpropagation Through Time (BPTT) to the application of backpropagation on an unrolled RNN, which accounts for this dependencies by summing up the gradients for each time step. In \autoref{eq:bptt} we see an example of this when calculating the gradient for $U_h$.
+Backpropagation is the standard gradient computation technique used for neural networks. However when applied to the recurrent connections of an RNN, the gradients will depend on the previous timesteps (up to $t=0$). Thus, we call Backpropagation Through Time (BPTT) \cite{werbos1990backpropagation} to the application of backpropagation on an unrolled RNN, which accounts for this dependencies by summing up the gradients for each time step. In \autoref{eq:bptt} we see an example of this when calculating the gradient for $U_h$.
 
 \begin{equation} \label{eq:bptt}
 \frac{\partial \mathcal{L}(t)}{\partial U_h} = \frac{\partial \mathcal{L}(t)}{\partial \mathbf{\hat{p}}(t)}\frac{\partial \mathbf{\hat{p}}(t)}{\partial \mathbf{h}(t)}\frac{\partial \mathbf{h}(t)}{\partial U_h} = \sum_{k=0}^{t} \frac{\partial \mathcal{L}(t)}{\partial \mathbf{\hat{p}}(t)}\frac{\partial \mathbf{\hat{p}}(t)}{\partial \mathbf{h}(t)}\frac{\partial \mathbf{h}(t)}{\partial \mathbf{h}(k)}\frac{\partial \mathbf{h}(k)}{\partial U_h}
@@ -187,7 +193,7 @@ If input sequences are comprised of thousands of timesteps, then this will be th
 	\frac{\partial \mathbf{h}(t)}{\partial \mathbf{h}(k)} = \prod_{t \geq i > k} \frac{\partial \mathbf{h}(i)}{\partial \mathbf{h}(i-1)}
 \end{equation}
 
-For exploding gradients, clipping the norm of the gradients to a pre-defined threshold has proven to solve the problem. On the other hand, vanishing gradient translates into gradient contributions from ``far away" steps becoming zero, and thus hindering the learning of long-range dependencies. The most popular solution for this problem has been the introduction of new cell architectures explicitly designed to deal with vanishing gradients such as Long Short-Term Memory (LSTM) \cite{hochreiter1997long} and Gated Recurrent Units (GRU) \cite{cho2014learning}.
+For exploding gradients, clipping the norm of the gradients to a pre-defined threshold has proven to be an effective remedy for this problem. On the other hand, vanishing gradient translates into gradient contributions from ``far away" steps becoming zero, and thus hindering the learning of long-range dependencies. The most popular solution for this problem has been the introduction of new cell architectures explicitly designed to deal with vanishing gradients such as Long Short-Term Memory (LSTM) \cite{hochreiter1997long} and Gated Recurrent Units (GRU) \cite{cho2014learning}. We will focus on the LSTM as the GRU cell is just a simplified version of the former.
 
 \begin{equation} \label{eq:lstmcell}
 	\begin{gathered}
@@ -200,7 +206,6 @@ For exploding gradients, clipping the norm of the gradients to a pre-defined thr
 	\end{gathered}
 \end{equation}
 
+where $W_f,W_i,W_o,W_f \in \mathbb{R}^{h \times h}$, $U_f,U_i,U_o,U_f \in \mathbb{R}^{h \times m}$, $\mathbf{f}(t),\mathbf{b}_f,\mathbf{i}(t),\mathbf{b}_i,  \allowbreak \mathbf{o}(t),\mathbf{b}_o,\mathbf{c}(t),\mathbf{b}_c,\mathbf{\tilde{c}}(t) \in \mathbb{R}^{h}$ and $\sigma_g,\sigma_c,\sigma_h$ are non linear functions. The main differences to a vanilla RNN are the introduction of a cell state $\mathbf{c}_t$ (that acts as internal memory) and the gates $\mathbf{f}$, $\mathbf{i}$ and $\mathbf{o}$. Gates are a way to optionally let information through and are learnt in such a way that the cell can remember long-range dependencies. As shown in \autoref{eq:lstmcell}, the new cell state is formed by a combination of the previous cell state weighted by the forget gate $\mathbf{f}(t)$ and the ``newly proposed" state $\mathbf{\tilde{c}}(t)$ weighted by the input gate $\mathbf{i}(t)$.
 
-We will focus on the LSTM as the GRU cell is just a simplified version of the former. The main differences to a vanilla RNN are the introduction of a cell state $\mathbf{c}_t$ (that acts as internal memory) and gates $\mathbf{f}$, $\mathbf{i}$ and $\mathbf{o}$. Gates are a way to optionally let information through and are learnt in such a way that the cell can remember long-range dependencies. As shown in \autoref{eq:lstmcell}, the new cell state is formed by a combination of the previous cell state weighted by the forget gate $\mathbf{f}(t)$ and the ``newly proposed" state $\mathbf{\tilde{c}}(t)$ weighted by the input gate $\mathbf{i}(t)$.
-
-To sum up, recurrent neural models using LSTM cells have become ubiquitous in a wide range of NLP tasks and are achieving state-of-the-art results in many of them.
+To sum up, recurrent neural network architectures using LSTM cells have become ubiquitous in a wide range of NLP tasks and are a key element in state-of-the-art language models \cite{jozefowicz2016exploring}.
