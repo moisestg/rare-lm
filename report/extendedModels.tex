@@ -1,18 +1,20 @@
 \chapter{Extended Language Models}
 
-In this chapter, 
+This chapter describes several recently proposed NLM architectures designed to tackle the rare word prediction problem and highlights the main similarities and differences among them. We also introduce our proposed model called ``Sentinel Mixture''.
 
-\todo{Finish this}
+\section{Attention Language Model}
+\label{sec:attention}
 
-\section{Continuous Cache}
+\subsection{Attention Models}
+
+\cite{bahdanau2014neural} start talking about the bottleneck issue and describe high level approach. Then we talk about how these models really work and detail classification as in the NLU tutorial. Maybe makes sense to mention the Show Attend Tell paper
+
+Now we go into the specifics of \cite{daniluk2017frustratingly}
+
+\section{Neural Continuous Cache}
 \label{sec:continuousCache}
 
 \cite{grave2016improving}
-
-\section{Attention LM}
-\label{sec:attention}
-
-\cite{daniluk2017frustratingly}
 
 \section{Pointer Sentinel Mixture Model (PSMM)}
 \label{sec:pointerMixture}
@@ -79,7 +81,7 @@ Finally the loss of the model is:
 	\end{gathered}
 \end{equation}
 
-\section{Softmax Mixture Model}
+\section{Softmax Mixture Model (SMM)}
 \label{sec:mixtureModel}
 
 \begin{equation}

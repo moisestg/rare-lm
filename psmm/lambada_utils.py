@@ -13,7 +13,7 @@ import random
 _PAD = "<pad>"
 _UNK = "<unk>"
 _BOC = "<boc>"
-_EOS = "<eos>"
+#_EOS = "<eos>"
 
 
 def softmax_stable(logits):
@@ -45,7 +45,7 @@ def tokenizer(line):
 
 def get_vocab(train_path, vocab_size):
 	# Load if already exists
-	pickle_path = os.path.split(train_path)[0]+"/preprocessed/dicts_vocSize"+str(vocab_size)+"_withNames.pkl"
+	pickle_path = os.path.split(train_path)[0]+"/preprocessed/dicts_vocSize"+str(vocab_size)+".pkl"
 	if os.path.exists(pickle_path):
 		print("\nRestoring vocab from: "+pickle_path)
 		with open(pickle_path, "rb") as f:
@@ -61,16 +61,11 @@ def get_vocab(train_path, vocab_size):
 				else:
 					word_counts[word] = 1
 
-	# Load names list and add to vocabulary
-	with open("names_list.pkl", "rb") as f:
-		names_list = pickle.load(f)
-
-	vocabulary = set([tupl[0] for tupl in word_counts.most_common(60000)])
-	vocabulary = vocabulary | names_list
-	vocabulary.remove("<boc>")
+	vocabulary = set([tupl[0] for tupl in word_counts.most_common(vocab_size+1)])
+	vocabulary.remove(_BOC)
 
 	# Generate ids
-	word2id = {word: i for i, word in enumerate(vocabulary, 3)} # final size: 63685
+	word2id = {word: i for i, word in enumerate(vocabulary, 3)}
 	word2id[_PAD] = 0
 	word2id[_UNK] = 1
 	word2id[_BOC] = 2
@@ -100,7 +95,7 @@ def get_wordIDs(data_path, word2id):
 	with open(data_path, "r", encoding="utf-8") as f:
 		for line in f:
 			for word in tokenizer(line):
-				if word == _BOC or word == _EOS:
+				if word == _BOC: # or word == _EOS
 					ids.append(-1)
 				if word in word2id:
 					ids.append(word2id[word])
@@ -127,14 +122,14 @@ def get_switchData(data_path):
 			return pickle.load(f)
 
 	# Load names list
-	with open("./names_list.pkl", "rb") as f:
+	with open("./names_list_lower.pkl", "rb") as f:
 		names_list = pickle.load(f)
 
 	switchData = []
 	with open(data_path, "r", encoding="utf-8") as f:
 		for line in f:
 			for word in line.strip().split():
-				if word == _BOC or word == _EOS:
+				if word == _BOC: # or word == _EOS
 					switchData.append(-1)
 				if word in names_list:
 					switchData.append(1)

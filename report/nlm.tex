@@ -2,15 +2,6 @@
 
 In this chapter, we introduce the notation used throughout the thesis and give a brief overview of the development of neural language models (NLM). We also review some of the main weaknesses shown by this family of models and how they have been addressed in the literature. 
 
-\todo{
-	- Finish this (7-8 pages) \\
-	- Mention CNN LMs ? \\
-	- Softmax variants (hierarchical)? \\
-	- Modern models (highway)? \\
-	- Include references for n-grams? \\
-	- Should I create my own figures?
-}
-
 \section{Notation}
 \label{sec:notation}
 
@@ -21,7 +12,7 @@ Before continuing, we will define the notation used in the thesis:
 	
 	\item Vectors are denoted with bold lowercase letters, such as $\mathbf{x}$ with $\mathbf{x}_i$ its $i$-th element, and are always assumed to be column vectors.
 	
-	\item Matrices are denoted with uppercase letters, such as $X$ with $X_{ij}$ as its $(i,j)$-th element.
+	\item Matrices are denoted with uppercase letters, such as $X$ with $X_{ij}$ its $(i,j)$-th element, $X_{i,:}$ its $i$-th row and $X_{:,j}$ its $j$-th column.
 \end{itemize}
 
 \section{Background}
@@ -105,13 +96,13 @@ Similar to n-grams, the model introduced in \cite{bengio2003neural} conditions t
 
 \begin{equation} \label{eq:fwnlm}
 	\begin{gathered}
-		\mathbf{x} = [C_{w_{t-1},:} \, , C_{w_{t-2},:} \, , \cdots \, , C_{w_{t-n+1},:})] \\
+		\mathbf{x} = [C_{w_{t-1},:} \, ; C_{w_{t-2},:} \, ; \cdots \, ; C_{w_{t-n+1},:})] \\
 		\mathbf{y} = W\mathbf{x} + U \tanh(H\mathbf{x}+\mathbf{d}) + \mathbf{b} \\
-		\hat{p}(w_t=i|w_{t-1},\ldots,w_{t-n+1}) = \frac{e^{\mathbf{y}_i}}{\sum_{n}e^{\mathbf{y}_n}} \\
+		\mathbf{\hat{p}}_i=\hat{p}(w_t=i|w_{t-1},\ldots,w_{t-n+1}) = \frac{e^{\mathbf{y}_i}}{\sum_{n}e^{\mathbf{y}_n}} \\
 	\end{gathered}
 \end{equation}
 
-where $C \in \mathbb{R}^{|V| \times m}$, $\mathbf{x} \in \mathbb{R}^{1 \times (n-1)m}$, $W \in \mathbb{R}^{|V| \times (n-1)m}$, $U \in \mathbb{R}^{|V| \times h}$, $H \in \mathbb{R}^{h \times (n-1)m}$, $\mathbf{d} \in \mathbb{R}^{h}$ and $\mathbf{y} ,\mathbf{b} \in \mathbb{R}^{|V|}$. The concatenated word representations $\mathbf{x}$ are fed through one (or more) nonlinear hidden layer (weights $H$ and bias $\mathbf{d}$), resulting in a hidden representation of size $h$. We then apply an affine transformation (weights $U$ and bias $\mathbf{b}$) to this hidden representation to obtain $\mathbf{y}$, an unnormalized probability distribution over the vocabulary $V$. Optionally, we can include direct connections from the word features to the output ($W$). Finally, a softmax operation produces a valid probability distribution over the full vocabulary.
+where $[\;]$ is the concatenation operator, $C \in \mathbb{R}^{|V| \times m}$, $\mathbf{x} \in \mathbb{R}^{1 \times (n-1)m}$, $W \in \mathbb{R}^{|V| \times (n-1)m}$, $U \in \mathbb{R}^{|V| \times h}$, $H \in \mathbb{R}^{h \times (n-1)m}$, $\mathbf{d} \in \mathbb{R}^{h}$ and $\mathbf{y} ,\mathbf{b} \in \mathbb{R}^{|V|}$. The concatenated word representations $\mathbf{x}$ are fed through one (or more) nonlinear hidden layer (weights $H$ and bias $\mathbf{d}$), resulting in a hidden representation of size $h$. We then apply an affine transformation (weights $U$ and bias $\mathbf{b}$) to this hidden representation to obtain $\mathbf{y}$, an unnormalized probability distribution over the vocabulary $V$. Optionally, we can include direct connections from the word features to the output ($W$). Finally, a softmax operation produces a valid probability distribution over the full vocabulary.
 
 \begin{figure}[H]
 	\centering
@@ -122,8 +113,7 @@ where $C \in \mathbb{R}^{|V| \times m}$, $\mathbf{x} \in \mathbb{R}^{1 \times (n
 
 Having a look at the full model (shown in \autoref{fig:ffarch}) we can observe that most expensive operation is the computation of the unnormalized probability distribution $\mathbf{y}$, which requires a number of dot products that scales linearly with $|V|$ (it is not unusual to work with vocabulary sizes in the order of the tens of thousands). 
 
-Several practical solutions have been proposed to avoid it, with \textbf{hierarchical softmax} \cite{morin2005hierarchical} being one of the most popular ones. It uses a hierarchical binary tree representation of the vocabulary with words as
-its leaves and, for each node, explicitly represents the relative probabilities of its child nodes. These define a random walk that assigns probabilities to words, allowing to reduce the complexity of obtaining the output probability of a single word to around $\log_2(|V|)$.
+Several practical solutions have been proposed to avoid it, with \textbf{hierarchical softmax} \cite{morin2005hierarchical} being one of the most popular ones. It uses a hierarchical binary tree representation of the vocabulary with words as its leaves and, for each node, explicitly represents the relative probabilities of its child nodes. These define a random walk that assigns probabilities to words, allowing to reduce the complexity of obtaining the output probability of a single word to around $\log_2(|V|)$.
 
 \section{Word Vectors}
 \label{sec:wv}
@@ -164,12 +154,12 @@ So far all the models that we have seen (n-grams and FFNLM) explicitly use a fix
 		\mathbf{h}(t) = \sigma_h(W_h \mathbf{x}(t) + U_h \mathbf{h}(t-1) + \mathbf{b_h})
 \end{equation}
 
-where $W_h \in \mathbb{R}^{h \times m}$, $\mathbf{x}(t) \in \mathbb{R}^{m}$, $U_h \in \mathbb{R}^{h \times h} , \mathbf{h}(t), \mathbf{h}(t-1), \mathbf{b_h} \in \mathbb{R}^{h}$ and $\sigma_h$ is a nonlinear function (e.g. sigmoid). It is important to note that the network parameters are shared over time. \cite{mikolov2010recurrent} was one of the first to successfully apply RNNs to language modeling. The hidden states $\mathbf{h}(t)$ are fed through a fully connected layer to produce a probability distribution over the vocabulary in a similar way to FFNLM.
+where $W_h \in \mathbb{R}^{h \times m}$, $\mathbf{x}(t) \in \mathbb{R}^{m}$, $U_h \in \mathbb{R}^{h \times h} , \mathbf{h}(t), \mathbf{h}(t-1), \mathbf{b_h} \in \mathbb{R}^{h}$ and $\sigma_h$ is a nonlinear function (e.g. sigmoid). It is important to note that the network parameters are shared over time. \cite{mikolov2010recurrent} was one of the first to successfully apply RNNs to language modeling. The hidden states $\mathbf{h}(t)$ are fed through a fully connected layer to produce a probability distribution over the vocabulary in a similar way to FFNLMs.
 
 \begin{equation} \label{eq:rnnlm}
 	\begin{gathered}
 		\mathbf{y}(t) = W_y \mathbf{h}(t) + \mathbf{b_y} \\
-		\hat{p}(w_t=i|\mathbf{h}(t)) = \frac{e^{\mathbf{y}(t)_i}}{\sum_{n}e^{\mathbf{y}(t)_n}} \\
+		\mathbf{\hat{p}}(t)_i=\hat{p}(w_t=i|\mathbf{h}(t)) = \frac{e^{\mathbf{y}(t)_i}}{\sum_{n}e^{\mathbf{y}(t)_n}} \\
 	\end{gathered}
 \end{equation}
 
@@ -187,13 +177,13 @@ One of the main problems of BPTT is the high cost of a single parameter update, 
 
 \subsection{Exploding and Vanishing Gradient}
 
-If input sequences are comprised of thousands of timesteps, then this will be the number of derivatives required for a single weight update. We can see this in \autoref{eq:gradient} by observing that the term $\frac{\partial \mathbf{h}(t)}{\partial \mathbf{h}(k)}$ is a chain-rule itself. Citing \cite{pascanu2013difficulty}, \textit{``a product of $t-k$ real numbers can shrink to zero or explode to infinity, so does this product of matrices"} and therefore, this can cause gradients to vanish or explode. 
+The number of derivatives required for a single weight update is directly proportional to the number of steps of our input sequences. We can see this in \autoref{eq:gradient} by observing that the term $\frac{\partial \mathbf{h}(t)}{\partial \mathbf{h}(k)}$ is a chain-rule itself. Citing \cite{pascanu2013difficulty}, \textit{``a product of $t-k$ real numbers can shrink to zero or explode to infinity, so does this product of matrices"} and therefore, this can cause gradients to vanish or explode. 
 
 \begin{equation} \label{eq:gradient}
 	\frac{\partial \mathbf{h}(t)}{\partial \mathbf{h}(k)} = \prod_{t \geq i > k} \frac{\partial \mathbf{h}(i)}{\partial \mathbf{h}(i-1)}
 \end{equation}
 
-For exploding gradients, clipping the norm of the gradients to a pre-defined threshold has proven to be an effective remedy for this problem. On the other hand, vanishing gradient translates into gradient contributions from ``far away" steps becoming zero, and thus hindering the learning of long-range dependencies. The most popular solution for this problem has been the introduction of new cell architectures explicitly designed to deal with vanishing gradients such as Long Short-Term Memory (LSTM) \cite{hochreiter1997long} and Gated Recurrent Units (GRU) \cite{cho2014learning}. We will focus on the LSTM as the GRU cell is just a simplified version of the former.
+For exploding gradients, clipping the norm of the gradients to a pre-defined threshold has proven to be an effective remedy for this problem. Moreover, vanishing gradients translate into gradient contributions from ``far away" steps becoming zero, and thus hindering the learning of long-range dependencies. The most popular solution for this problem has been the introduction of new cell architectures explicitly designed to deal with vanishing gradients such as Long Short-Term Memory (LSTM) \cite{hochreiter1997long} and Gated Recurrent Units (GRU) \cite{cho2014learning}. We will focus on the LSTM as the GRU cell is just a simplified version of the former.
 
 \begin{equation} \label{eq:lstmcell}
 	\begin{gathered}
@@ -206,6 +196,15 @@ For exploding gradients, clipping the norm of the gradients to a pre-defined thr
 	\end{gathered}
 \end{equation}
 
-where $W_f,W_i,W_o,W_f \in \mathbb{R}^{h \times h}$, $U_f,U_i,U_o,U_f \in \mathbb{R}^{h \times m}$, $\mathbf{f}(t),\mathbf{b}_f,\mathbf{i}(t),\mathbf{b}_i,  \allowbreak \mathbf{o}(t),\mathbf{b}_o,\mathbf{c}(t),\mathbf{b}_c,\mathbf{\tilde{c}}(t) \in \mathbb{R}^{h}$ and $\sigma_g,\sigma_c,\sigma_h$ are non linear functions. The main differences to a vanilla RNN are the introduction of a cell state $\mathbf{c}_t$ (that acts as internal memory) and the gates $\mathbf{f}$, $\mathbf{i}$ and $\mathbf{o}$. Gates are a way to optionally let information through and are learnt in such a way that the cell can remember long-range dependencies. As shown in \autoref{eq:lstmcell}, the new cell state is formed by a combination of the previous cell state weighted by the forget gate $\mathbf{f}(t)$ and the ``newly proposed" state $\mathbf{\tilde{c}}(t)$ weighted by the input gate $\mathbf{i}(t)$.
+where $W_f,W_i,W_o,W_f \in \mathbb{R}^{h \times h}$, $U_f,U_i,U_o,U_f \in \mathbb{R}^{h \times m}$, $\mathbf{f}(t),\mathbf{b}_f,\mathbf{i}(t),\mathbf{b}_i,  \allowbreak \mathbf{o}(t),\mathbf{b}_o,\mathbf{c}(t),\mathbf{b}_c,\mathbf{\tilde{c}}(t) \in \mathbb{R}^{h}$ and $\sigma_g,\sigma_c,\sigma_h$ are non linear functions. The main differences to a vanilla RNN are the introduction of a cell state $\mathbf{c}(t)$ (that acts as internal memory) and the gates $\mathbf{f}(t)$, $\mathbf{i}(t)$ and $\mathbf{o}(t)$. 
 
-To sum up, recurrent neural network architectures using LSTM cells have become ubiquitous in a wide range of NLP tasks and are a key element in state-of-the-art language models \cite{jozefowicz2016exploring}.
+Gates are a way to optionally let information through and are learnt in such a way that the cell can remember long-range dependencies. Each gate is calculated as an affine transformation of the current input $\mathbf{x}(t)$ and the previous hidden state $\mathbf{h}(t-1)$ followed by a non linearity, as shown in \autoref{eq:lstmcell}. These gates modify the cell state through pointwise multiplications; specifically, the new cell state is formed by a combination of the previous cell state weighted by the forget gate $\mathbf{f}(t)$ and the ``newly proposed" state $\mathbf{\tilde{c}}(t)$ weighted by the input gate $\mathbf{i}(t)$. Therefore, gates provide an explicit way for the cell to decide what information should be forgotten and what is worth remembering for the next steps.  
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[scale=0.6]{lstm_cell}
+	\captionof{figure}{LSTM cell architecture \cite{colah2015lstm}}
+	\label{fig:ffarch}
+\end{figure}
+
+To sum up, recurrent neural network architectures using LSTM cells have become ubiquitous in a wide range of NLP tasks and are a key element for state-of-the-art language models \cite{jozefowicz2016exploring}.

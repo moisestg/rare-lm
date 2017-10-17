@@ -122,20 +122,20 @@ class PointerSentinelMixtureLM(object):
 			self.final_attention_ids = initial_attention_ids
 
 		# Mix probability distributions
-		gates_all = tf.reshape(tf.stack(gates_all, axis=1), shape=[-1]) # [batch_size*num_steps]
+		self.gates_all = gates_all = tf.reshape(tf.stack(gates_all, axis=1), shape=[-1]) # [batch_size*num_steps]
 		self.gate_names = tf.reduce_mean( tf.gather(gates_all, indices_name) )
 		self.gate_notNames = tf.reduce_mean( tf.gather(gates_all, indices_notName) )
-		attention_cacheProbs_all = tf.reshape(tf.stack(attention_cacheProbs_all, axis=1), shape=[-1, attention_length]) # [batch_size*num_steps, attention_length]
-		attention_ids_all = tf.reshape(tf.stack(attention_ids_all, axis=1), shape=[-1, attention_length]) # [batch_size*num_steps, attention_length]
+		self.attention_cacheProbs_all = attention_cacheProbs_all = tf.reshape(tf.stack(attention_cacheProbs_all, axis=1), shape=[-1, attention_length]) # [batch_size*num_steps, attention_length]
+		self.attention_ids_all = attention_ids_all = tf.reshape(tf.stack(attention_ids_all, axis=1), shape=[-1, attention_length]) # [batch_size*num_steps, attention_length]
 		lm_y_flattened_tiled = tf.tile(tf.expand_dims(lm_y_flattened, axis=-1), multiples=[1, attention_length])
 		cacheProbs_relevantIndexes = tf.where(tf.equal(attention_ids_all, lm_y_flattened_tiled))
-		prob_pointer = tf.reduce_sum( 
+		self.prob_pointer = prob_pointer = tf.reduce_sum( 
 				tf.scatter_nd(indices=cacheProbs_relevantIndexes, 
 				updates=tf.gather_nd(attention_cacheProbs_all, cacheProbs_relevantIndexes), 
 				shape=attention_cacheProbs_all.get_shape()) 
 			, axis=-1)
-		#prob_mix = gates_all * prob_softmax + (1.-gates_all) * prob_pointer
-		prob_mix = gates_all * prob_softmax + prob_pointer
+
+		self.prob_mix = prob_mix = gates_all * prob_softmax + prob_pointer
 
 		# Loss calculation
 		self.perplexity_name =  -1. * tf.reduce_mean(utils.log_stable( tf.gather(prob_mix, indices_name)))
