@@ -2,12 +2,83 @@
 
 This chapter describes several recently proposed NLM architectures designed to tackle the rare word prediction problem and highlights the main similarities and differences among them. We also introduce our proposed model called ``Sentinel Mixture''.
 
-\section{Attention Language Model}
+\section{Attention Models}
 \label{sec:attention}
 
-\subsection{Attention Models}
+Although the concept of attention that we are going to introduce is not directly concerned with rare word prediction, it will help us lay the foundations for the subsequent models as they take inspiration from it.
 
-\cite{bahdanau2014neural} start talking about the bottleneck issue and describe high level approach. Then we talk about how these models really work and detail classification as in the NLU tutorial. Maybe makes sense to mention the Show Attend Tell paper
+\subsection{Original Formulation}
+
+Attention models were firstly developed in the field of neural machine translation (NMT) in the seminal paper \cite{bahdanau2014neural}. At that time, most of the proposed NMT models belonged to a family known as ``encoder-decoders'' \cite{sutskever2014sequence}. These models consist of two parts: first an encoder (a deep bidirectional LSTM network) compresses the source sentence (specifically the embeddings for each word) $\{\mathbf{i}(1), \mathbf{i}(2), \cdots, \mathbf{i}(n_i)\}$ into fixed-length vector representation $\mathbf{c}$. This is done by sequentially processing the sentence with a recurrent network and taking the last hidden state $\mathbf{h}(n_i)$ as $\mathbf{c}$ (\autoref{eq:encoder}).
+
+\begin{equation} \label{eq:encoder}
+	\begin{gathered}
+		\mathbf{h}(t) = \text{LSTM}(\mathbf{i}(t), \mathbf{h}(t-1)) \\
+		\mathbf{c} = \mathbf{h}(n_i)
+	\end{gathered}
+\end{equation}
+
+Then a decoder (also a deep LSTM network) outputs a translation sentence $o=\{o(1), o(2), \cdots, o(n_o)\}$ using $\mathbf{c}$ as its first input. As shown in \autoref{eq:decoder}, in a similar way as the RNLM models that we saw in \autoref{sec:rnn}, the probability of outputting a word at step $t$ is obtained as the vocabulary softmax of an affine transformation of the hidden state $\mathbf{s}(t)$.
+
+\begin{equation} \label{eq:decoder}
+	\begin{gathered}
+		\mathbf{s}(t) = \text{LSTM}(\mathbf{o}(t-1), \mathbf{s}(t-1)) \\
+		p(o) = \prod_{t=1}^{n_o} p(o(t)|\{o(1), \cdots, o(t-1)\}, \mathbf{c}) \\
+		p(o(t)|\{\mathbf{o}(1), \cdots, \mathbf{o}(t-1)\}, \mathbf{c}) = \text{softmax}(W_o \mathbf{s}(t) +\textbf{b}_o)
+	\end{gathered}
+\end{equation}
+
+A potential problem for this architecture is the fact that all the necessary information from a source sentence has to be encoded into the vector $\mathbf{c}$. Hence, this may make it difficult for the model to deal with long sentences. Instead the decoder is allowed to access the full sequence of the encoder's hidden states $\{\mathbf{h}(1), \mathbf{h}(2), \cdots, \mathbf{h}(n_i)\}$, as shown in \autoref{fig:nmtAttention}.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[scale=0.28]{nmt}
+	\captionof{figure}{Attention NMT model}
+	\label{fig:nmtAttention}
+\end{figure}
+
+In this new architecture the decoder is provided with an additional input, the context vector $\mathbf{c}(t)$. For each step $t$ of the decoder, it is calculated in the following way:
+
+\begin{equation} \label{eq:nmtAttention}
+	\begin{gathered}
+		\mathbf{e}(t)_k = e_{tk} = \mathbf{v_a}^{\top} \tanh(W_a \mathbf{s}(t-1)+U_a\mathbf{h}(k)), \; \forall k \in 1, \cdots , n_i  \\
+		\boldsymbol{\alpha}(t)_k = \alpha_{tk} = \frac{e^{e_{tk}}}{\sum_{j}e^{e_{tj}}}, \; \forall k \in 1, \cdots , n_i  \\
+		\mathbf{c}(t) = \sum_{k=1}^{n_i} \alpha_{tk} \mathbf{h}(k)
+	\end{gathered}
+\end{equation}
+
+where $\mathbf{e}(t),\boldsymbol{\alpha}(t) \in \mathbb{R}^{n_i}$, $W_a \in \mathbb{R}^{h \times h}$, $U_a \in \mathbb{R}^{h \times 2h}$, $\mathbf{h}(t) \in \mathbb{R}^{2h}$ and $\mathbf{v_a},\mathbf{s}(t),\mathbf{c}(t) \in \mathbb{R}^{h}$. 
+
+First, a vector of attention scores $\mathbf{e}(t)$ is calculated in order to see how much each source word should be ``attended'' with respect to the current decoder step. These are obtained with a single-layer multilayer perceptron. Next, the scores are normalized via a softmax operation producing the attention weights (can also be interpreted as probabilities)  $\boldsymbol{\alpha}(t)$. Finally, the context vector $\mathbf{c}(t)$ is obtained as a convex combination of all the encoder's hidden states weighted by $\boldsymbol{\alpha}(t)$.
+
+\subsection{Classification}
+
+Since their introduction attention has become very popular in NLP and has been applied successfully in other areas such as computer vision \cite{xu2015show}, originating the appearance of multiple variants. Thus, we will now introduce one possible classification (inspired by \cite{luongeffective}) of such models attending to three different aspects:
+
+\begin{itemize}
+	\item  Depending on the attention's span:
+		\begin{itemize}
+			\itemsep 0em
+			\item  \textbf{Global:} all source positions are taken into account.
+			\item  \textbf{Local:} only a subset of all source positions is used.
+		\end{itemize}
+	\item  Depending on 
+		\begin{itemize}
+			\itemsep 0em
+			\item  \textbf{Soft:}
+			\item  \textbf{Hard:} a single source position is selected stochastically. This has the drawback of requiring training techniques such as Monte Carlo sampling or reinforcement learning.
+		\end{itemize}
+	\item  Depending on whether the source information is used when computing the attention scores:
+		\begin{itemize}
+			\itemsep 0em
+			\item  \textbf{Content-based:}
+			\item  \textbf{Position-based:}
+		\end{itemize}	
+\end{itemize}
+
+Using this classification, we would consider the  soft content-based  attention. In fact, the models that we introduce in the upcoming sections will fall into the same category.
+
+\subsection{Application to Language Modeling}
 
 Now we go into the specifics of \cite{daniluk2017frustratingly}
 

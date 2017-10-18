@@ -102,7 +102,9 @@ Similar to n-grams, the model introduced in \cite{bengio2003neural} conditions t
 	\end{gathered}
 \end{equation}
 
-where $[\;]$ is the concatenation operator, $C \in \mathbb{R}^{|V| \times m}$, $\mathbf{x} \in \mathbb{R}^{1 \times (n-1)m}$, $W \in \mathbb{R}^{|V| \times (n-1)m}$, $U \in \mathbb{R}^{|V| \times h}$, $H \in \mathbb{R}^{h \times (n-1)m}$, $\mathbf{d} \in \mathbb{R}^{h}$ and $\mathbf{y} ,\mathbf{b} \in \mathbb{R}^{|V|}$. The concatenated word representations $\mathbf{x}$ are fed through one (or more) nonlinear hidden layer (weights $H$ and bias $\mathbf{d}$), resulting in a hidden representation of size $h$. We then apply an affine transformation (weights $U$ and bias $\mathbf{b}$) to this hidden representation to obtain $\mathbf{y}$, an unnormalized probability distribution over the vocabulary $V$. Optionally, we can include direct connections from the word features to the output ($W$). Finally, a softmax operation produces a valid probability distribution over the full vocabulary.
+where $[\;]$ is the concatenation operator, $C \in \mathbb{R}^{|V| \times m}$, $\mathbf{x} \in \mathbb{R}^{1 \times (n-1)m}$, $W \in \mathbb{R}^{|V| \times (n-1)m}$, $U \in \mathbb{R}^{|V| \times h}$, $H \in \mathbb{R}^{h \times (n-1)m}$, $\mathbf{d} \in \mathbb{R}^{h}$ and $\mathbf{y} ,\mathbf{b} \in \mathbb{R}^{|V|}$. 
+
+The concatenated word representations $\mathbf{x}$ are fed through one (or more) nonlinear hidden layer (weights $H$ and bias $\mathbf{d}$), resulting in a hidden representation of size $h$. We then apply an affine transformation (weights $U$ and bias $\mathbf{b}$) to this hidden representation to obtain $\mathbf{y}$, an unnormalized probability distribution over the vocabulary $V$. Optionally, we can include direct connections from the word features to the output ($W$). Finally, a softmax operation produces a valid probability distribution over the full vocabulary.
 
 \begin{figure}[H]
 	\centering
@@ -154,7 +156,9 @@ So far all the models that we have seen (n-grams and FFNLM) explicitly use a fix
 		\mathbf{h}(t) = \sigma_h(W_h \mathbf{x}(t) + U_h \mathbf{h}(t-1) + \mathbf{b_h})
 \end{equation}
 
-where $W_h \in \mathbb{R}^{h \times m}$, $\mathbf{x}(t) \in \mathbb{R}^{m}$, $U_h \in \mathbb{R}^{h \times h} , \mathbf{h}(t), \mathbf{h}(t-1), \mathbf{b_h} \in \mathbb{R}^{h}$ and $\sigma_h$ is a nonlinear function (e.g. sigmoid). It is important to note that the network parameters are shared over time. \cite{mikolov2010recurrent} was one of the first to successfully apply RNNs to language modeling. The hidden states $\mathbf{h}(t)$ are fed through a fully connected layer to produce a probability distribution over the vocabulary in a similar way to FFNLMs.
+where $W_h \in \mathbb{R}^{h \times m}$, $\mathbf{x}(t) \in \mathbb{R}^{m}$, $U_h \in \mathbb{R}^{h \times h} , \mathbf{h}(t), \mathbf{h}(t-1), \mathbf{b_h} \in \mathbb{R}^{h}$ and $\sigma_h$ is a nonlinear function (e.g. sigmoid). 
+
+It is important to note that the network parameters are shared over time. \cite{mikolov2010recurrent} was one of the first to successfully apply RNNs to language modeling. The hidden states $\mathbf{h}(t)$ are fed through a fully connected layer to produce a probability distribution over the vocabulary in a similar way to FFNLMs.
 
 \begin{equation} \label{eq:rnnlm}
 	\begin{gathered}
@@ -170,7 +174,7 @@ where $W_y \in \mathbb{R}^{|V| \times h}$ and $\mathbf{y}(t)$, $\mathbf{b_y} \in
 Backpropagation is the standard gradient computation technique used for neural networks. However when applied to the recurrent connections of an RNN, the gradients will depend on the previous timesteps (up to $t=0$). Thus, we call Backpropagation Through Time (BPTT) \cite{werbos1990backpropagation} to the application of backpropagation on an unrolled RNN, which accounts for this dependencies by summing up the gradients for each time step. In \autoref{eq:bptt} we see an example of this when calculating the gradient for $U_h$.
 
 \begin{equation} \label{eq:bptt}
-\frac{\partial \mathcal{L}(t)}{\partial U_h} = \frac{\partial \mathcal{L}(t)}{\partial \mathbf{\hat{p}}(t)}\frac{\partial \mathbf{\hat{p}}(t)}{\partial \mathbf{h}(t)}\frac{\partial \mathbf{h}(t)}{\partial U_h} = \sum_{k=0}^{t} \frac{\partial \mathcal{L}(t)}{\partial \mathbf{\hat{p}}(t)}\frac{\partial \mathbf{\hat{p}}(t)}{\partial \mathbf{h}(t)}\frac{\partial \mathbf{h}(t)}{\partial \mathbf{h}(k)}\frac{\partial \mathbf{h}(k)}{\partial U_h}
+	\frac{\partial \mathcal{L}(t)}{\partial U_h} = \frac{\partial \mathcal{L}(t)}{\partial \mathbf{\hat{p}}(t)}\frac{\partial \mathbf{\hat{p}}(t)}{\partial \mathbf{h}(t)}\frac{\partial \mathbf{h}(t)}{\partial U_h} = \sum_{k=0}^{t} \frac{\partial \mathcal{L}(t)}{\partial \mathbf{\hat{p}}(t)}\frac{\partial \mathbf{\hat{p}}(t)}{\partial \mathbf{h}(t)}\frac{\partial \mathbf{h}(t)}{\partial \mathbf{h}(k)}\frac{\partial \mathbf{h}(k)}{\partial U_h}
 \end{equation}
 
 One of the main problems of BPTT is the high cost of a single parameter update, which makes it impossible to use for large numbers of iterations. \textbf{Truncated Backpropagation Through Time} (TBPTT), which is a modified version of BPTT, was introduced in \cite{sutskever2013training} to work around this limitation. When using TBPTT, the sequence is processed one timestep at a time, and every $k_1$ timesteps, it runs BPTT for $k_2$ timesteps, so a parameter update can be cheap if $k_2$ is small. Most implementations assume $k_1=k_2$.
@@ -183,7 +187,7 @@ The number of derivatives required for a single weight update is directly propor
 	\frac{\partial \mathbf{h}(t)}{\partial \mathbf{h}(k)} = \prod_{t \geq i > k} \frac{\partial \mathbf{h}(i)}{\partial \mathbf{h}(i-1)}
 \end{equation}
 
-For exploding gradients, clipping the norm of the gradients to a pre-defined threshold has proven to be an effective remedy for this problem. Moreover, vanishing gradients translate into gradient contributions from ``far away" steps becoming zero, and thus hindering the learning of long-range dependencies. The most popular solution for this problem has been the introduction of new cell architectures explicitly designed to deal with vanishing gradients such as Long Short-Term Memory (LSTM) \cite{hochreiter1997long} and Gated Recurrent Units (GRU) \cite{cho2014learning}. We will focus on the LSTM as the GRU cell is just a simplified version of the former.
+For exploding gradients, clipping the norm of the gradients to a pre-defined threshold has proven to be an effective remedy for this problem. Moreover, vanishing gradients translate into gradient contributions from ``far away" steps becoming zero, and thus hindering the learning of long-range dependencies. The most popular solution for this problem has been the introduction of new cell architectures explicitly designed to deal with vanishing gradients such as Long Short-Term Memory (LSTM) \cite{hochreiter1997long} and Gated Recurrent Units (GRU) \cite{cho2014learning}. We will focus on the LSTM as the GRU cell is just a simplified version of the former. The main differences to a vanilla RNN are the introduction of a cell state $\mathbf{c}(t)$ (that acts as internal memory) and the gates $\mathbf{f}(t)$, $\mathbf{i}(t)$ and $\mathbf{o}(t)$: 
 
 \begin{equation} \label{eq:lstmcell}
 	\begin{gathered}
@@ -196,7 +200,7 @@ For exploding gradients, clipping the norm of the gradients to a pre-defined thr
 	\end{gathered}
 \end{equation}
 
-where $W_f,W_i,W_o,W_f \in \mathbb{R}^{h \times h}$, $U_f,U_i,U_o,U_f \in \mathbb{R}^{h \times m}$, $\mathbf{f}(t),\mathbf{b}_f,\mathbf{i}(t),\mathbf{b}_i,  \allowbreak \mathbf{o}(t),\mathbf{b}_o,\mathbf{c}(t),\mathbf{b}_c,\mathbf{\tilde{c}}(t) \in \mathbb{R}^{h}$ and $\sigma_g,\sigma_c,\sigma_h$ are non linear functions. The main differences to a vanilla RNN are the introduction of a cell state $\mathbf{c}(t)$ (that acts as internal memory) and the gates $\mathbf{f}(t)$, $\mathbf{i}(t)$ and $\mathbf{o}(t)$. 
+where $W_f,W_i,W_o,W_f \in \mathbb{R}^{h \times h}$, $U_f,U_i,U_o,U_f \in \mathbb{R}^{h \times m}$, $\mathbf{f}(t),\mathbf{b}_f,\mathbf{i}(t),\mathbf{b}_i,  \allowbreak \mathbf{o}(t),\mathbf{b}_o,\mathbf{c}(t),\mathbf{b}_c,\mathbf{\tilde{c}}(t) \in \mathbb{R}^{h}$ and $\sigma_g,\sigma_c,\sigma_h$ are non linear functions. 
 
 Gates are a way to optionally let information through and are learnt in such a way that the cell can remember long-range dependencies. Each gate is calculated as an affine transformation of the current input $\mathbf{x}(t)$ and the previous hidden state $\mathbf{h}(t-1)$ followed by a non linearity, as shown in \autoref{eq:lstmcell}. These gates modify the cell state through pointwise multiplications; specifically, the new cell state is formed by a combination of the previous cell state weighted by the forget gate $\mathbf{f}(t)$ and the ``newly proposed" state $\mathbf{\tilde{c}}(t)$ weighted by the input gate $\mathbf{i}(t)$. Therefore, gates provide an explicit way for the cell to decide what information should be forgotten and what is worth remembering for the next steps.  
 
