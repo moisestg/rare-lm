@@ -9,7 +9,7 @@ Although the concept of attention that we are going to introduce is not directly
 
 \subsection{Original Formulation}
 
-Attention models were firstly developed in the field of neural machine translation (NMT) in the seminal paper \cite{bahdanau2014neural}. At that time, most of the proposed NMT models belonged to a family known as ``encoder-decoders'' \cite{sutskever2014sequence}. These models consist of two parts: first an encoder (a deep bidirectional LSTM network) compresses the source sentence (specifically the embeddings for each word) $\{\mathbf{i}(1), \mathbf{i}(2), \cdots, \mathbf{i}(n_i)\}$ into fixed-length vector representation $\mathbf{c}$. This is done by sequentially processing the sentence with a recurrent network and taking the last hidden state $\mathbf{h}(n_i)$ as $\mathbf{c}$ (\autoref{eq:encoder}).
+Attention models were firstly developed in the field of neural machine translation (NMT) in the seminal paper \cite{bahdanau2014neural}. At that time, most of the proposed NMT models belonged to a family known as ``encoder-decoders'' \cite{sutskever2014sequence}. These models consist of two parts: first an encoder (a deep bidirectional LSTM network) compresses the input sentence (specifically the embeddings for each word) $\{\mathbf{i}(1), \mathbf{i}(2), \cdots, \mathbf{i}(n_i)\}$ into fixed-length vector representation $\mathbf{c}$. This is done by sequentially processing the sentence with a recurrent network and taking the last hidden state $\mathbf{h}(n_i)$ as $\mathbf{c}$ (\autoref{eq:encoder}).
 
 \begin{equation} \label{eq:encoder}
 	\begin{gathered}
@@ -28,12 +28,12 @@ Then a decoder (also a deep LSTM network) outputs a translation sentence $o=\{o(
 	\end{gathered}
 \end{equation}
 
-A potential problem for this architecture is the fact that all the necessary information from a source sentence has to be encoded into the vector $\mathbf{c}$. Hence, this may make it difficult for the model to deal with long sentences. Instead the decoder is allowed to access the full sequence of the encoder's hidden states $\{\mathbf{h}(1), \mathbf{h}(2), \cdots, \mathbf{h}(n_i)\}$, as shown in \autoref{fig:nmtAttention}.
+A potential problem for this architecture is the fact that all the necessary information from an input sentence has to be encoded into the vector $\mathbf{c}$. Hence, this may make it difficult for the model to deal with long sentences. Instead the decoder is allowed to access the full sequence of the encoder's hidden states $\{\mathbf{h}(1), \mathbf{h}(2), \cdots, \mathbf{h}(n_i)\}$, as shown in \autoref{fig:nmtAttention}.
 
 \begin{figure}[H]
 	\centering
 	\includegraphics[scale=0.28]{nmt}
-	\captionof{figure}{Attention NMT model}
+	\captionof{figure}{Attention NMT model from \cite{bahdanau2014neural}}
 	\label{fig:nmtAttention}
 \end{figure}
 
@@ -49,38 +49,55 @@ In this new architecture the decoder is provided with an additional input, the c
 
 where $\mathbf{e}(t),\boldsymbol{\alpha}(t) \in \mathbb{R}^{n_i}$, $W_a \in \mathbb{R}^{h \times h}$, $U_a \in \mathbb{R}^{h \times 2h}$, $\mathbf{h}(t) \in \mathbb{R}^{2h}$ and $\mathbf{v_a},\mathbf{s}(t),\mathbf{c}(t) \in \mathbb{R}^{h}$. 
 
-First, a vector of attention scores $\mathbf{e}(t)$ is calculated in order to see how much each source word should be ``attended'' with respect to the current decoder step. These are obtained with a single-layer multilayer perceptron. Next, the scores are normalized via a softmax operation producing the attention weights (can also be interpreted as probabilities)  $\boldsymbol{\alpha}(t)$. Finally, the context vector $\mathbf{c}(t)$ is obtained as a convex combination of all the encoder's hidden states weighted by $\boldsymbol{\alpha}(t)$.
+First, a vector of attention scores $\mathbf{e}(t)$ is calculated in order to see how much each input word should be ``attended'' with respect to the current decoder step. These are obtained with a single-layer multilayer perceptron. Next, the scores are normalized via a softmax operation producing the attention weights (can also be interpreted as probabilities)  $\boldsymbol{\alpha}(t)$. Finally, the context vector $\mathbf{c}(t)$ is obtained as a convex combination of all the encoder's hidden states weighted by $\boldsymbol{\alpha}(t)$.
 
 \subsection{Classification}
 
-Since their introduction attention has become very popular in NLP and has been applied successfully in other areas such as computer vision \cite{xu2015show}, originating the appearance of multiple variants. Thus, we will now introduce one possible classification (inspired by \cite{luongeffective}) of such models attending to three different aspects:
+Since its introduction, attention has become very popular in NLP and has been applied successfully in other areas such as computer vision \cite{xu2015show}, originating the appearance of multiple variants. Thus, we introduce one possible classification (inspired by \cite{luongeffective}) of such models attending to three different aspects:
 
 \begin{itemize}
 	\item  Depending on the attention's span:
 		\begin{itemize}
 			\itemsep 0em
-			\item  \textbf{Global:} all source positions are taken into account.
-			\item  \textbf{Local:} only a subset of all source positions is used.
+			\item  \textbf{Global:} all inputs are taken into account.
+			\item  \textbf{Local:} only a subset of all inputs is used.
 		\end{itemize}
-	\item  Depending on 
+	\item  Depending on whether all inputs are allowed to contribute to the context:
 		\begin{itemize}
 			\itemsep 0em
-			\item  \textbf{Soft:}
-			\item  \textbf{Hard:} a single source position is selected stochastically. This has the drawback of requiring training techniques such as Monte Carlo sampling or reinforcement learning.
+			\item  \textbf{Soft:} context is built as a deterministic weighted combination of the inputs. This variant is smooth and differentiable so learning can be done by using standard backpropagation.
+			\item  \textbf{Hard:} context is chosen as a single input that is selected stochastically. This has the drawback of requiring learning techniques such as Monte Carlo sampling or reinforcement learning.
 		\end{itemize}
-	\item  Depending on whether the source information is used when computing the attention scores:
+	\item  Depending on whether the content of inputs is used when computing the attention scores:
 		\begin{itemize}
 			\itemsep 0em
-			\item  \textbf{Content-based:}
-			\item  \textbf{Position-based:}
+			\item  \textbf{Location-based:} the attention score for each input is obtained without taking into account their contents (e.g. $\mathbf{h}(t)$ in the setting described in the previous section).
+			\item  \textbf{Content-based:} the input's contents are involved when calculating how relevant is each of them. This can be done in multiple ways and some examples are: dot product $\mathbf{s}(t)^{\top}\mathbf{h}(t)$, general $\mathbf{s}(t)^{\top}W\mathbf{h}(t)$ or ``concatenation'' $W\mathbf{s}(t) + U\mathbf{h}(t)$.		
 		\end{itemize}	
 \end{itemize}
 
-Using this classification, we would consider the  soft content-based  attention. In fact, the models that we introduce in the upcoming sections will fall into the same category.
+Using this classification, the model introduced in the previous section would be classified as \textit{soft content-based attention}. In fact, the models that we introduce in the upcoming sections will fall into the same category.
 
 \subsection{Application to Language Modeling}
 
-Now we go into the specifics of \cite{daniluk2017frustratingly}
+\todo{
+	- Talk about the KVP extension? \\
+	- Run experiment with KVP? What length?
+}
+
+An adaptation of the attention mechanism for RNLMs that we saw in \ref{sec:rnn} was presented in \cite{daniluk2017frustratingly}. The first adaptation is that due to the extensive length of the texts used in language modeling, for practical reasons the attention span is limited to a window of the previous $L$ hidden states, $Y(t)$. The second is that both the context vector $\mathbf{c}(t)$ and the current hidden state $\mathbf{h}(t)$ are blended into an ``augmented'' hidden state $\mathbf{h^*}(t)$. The remaining aspects of the model are left in the same way as in \cite{bahdanau2014neural}, as we can see in \autoref{eq:attentionLM}.
+
+\begin{equation} \label{eq:attentionLM}
+	\begin{gathered}
+		Y(t) = [\mathbf{h}(t-L) ; \cdots ; \mathbf{h}(t-1)] \\
+		\mathbf{e}(t) = \mathbf{v_a}^{\top} \tanh(W_a Y(t) + U_a\mathbf{h}(t)\mathbf{1}^{\top}) \\
+		\boldsymbol{\alpha}(t) = \text{softmax}(\mathbf{e}(t)) \\
+		\mathbf{c}(t) = Y(t)\boldsymbol{\alpha}(t)^{\top} \\
+		\mathbf{h^*}(t) = \tanh(W_c \mathbf{c}(t) + W_h \mathbf{h}(t))
+	\end{gathered}	
+\end{equation}
+
+where $Y(t) \in \mathbb{R}^{h \times L}$, $W_a,U_a,W_c,W_h \in \mathbb{R}^{h \times h}$, $\mathbf{v_a},\mathbf{h}(t),\mathbf{s}(t),\mathbf{c}(t),\mathbf{h^*}(t) \in \mathbb{R}^{h}$ and $\mathbf{e}(t), \mathbf{1}, \boldsymbol{\alpha}(t) \in \mathbb{R}^{L}$.
 
 \section{Neural Continuous Cache}
 \label{sec:continuousCache}
