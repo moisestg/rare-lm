@@ -96,11 +96,13 @@ class PointerSentinelMixtureLM(object):
 			initial_attention_ids = self.initial_attention_ids = tf.get_variable("initial_attention_ids", dtype=tf.int32, shape=[batch_size, attention_length], initializer=tf.zeros_initializer(), trainable=False) # initial ids (0, PAD) are valid but ignored
 			W_query = tf.get_variable("W_query", dtype=tf.float32, shape=[final_hidden_size, final_hidden_size])
 			b_query = tf.get_variable("b_query", dtype=tf.float32, shape=[final_hidden_size])
-			sentinel = tf.get_variable("sentinel", dtype=tf.float32, shape=[final_hidden_size])
+			sentinel = tf.get_variable("sentinel", dtype=tf.float32, shape=[final_hidden_size], initializer=tf.random_uniform_initializer(-.01, .01)) #
 
 			attention_cacheProbs_all = [] # list of length "num_steps" of Tensors with shape [batch_size, attention_length]
 			attention_ids_all = [] # ? or just slice from lm_x
 			gates_all = [] # 
+
+			attention_scores_all = []
 
 			for step in range(num_steps):
 				current_hidden_states = hidden_states[step] # [batch_size, final_hidden_size]
@@ -112,6 +114,7 @@ class PointerSentinelMixtureLM(object):
 				attention_cacheScores = tf.reduce_sum( initial_attention_states * tf.expand_dims(queries, axis=-1) , axis=1) # [batch_size, attention_length]
 				attention_sentinelScores = tf.reduce_sum( queries * sentinel , axis=-1) # [batch_size]
 				attention_scores = tf.concat([attention_cacheScores, tf.expand_dims(attention_sentinelScores, axis=-1)], axis=-1) # [batch_size, attention_length + 1]
+				attention_scores_all.append(attention_scores)
 				attention_probs = utils.softmax_stable(attention_scores) # [batch_size, attention_length + 1] (softmax along last dimension)	
 				gates = attention_probs[:,-1] # [batch_size]
 				gates_all.append( gates )
@@ -122,6 +125,7 @@ class PointerSentinelMixtureLM(object):
 			self.final_attention_ids = initial_attention_ids
 
 		# Mix probability distributions
+		self.attention_scores = tf.reshape(tf.stack(attention_scores_all, axis=1), shape=[-1, attention_length+1])
 		self.gates_all = gates_all = tf.reshape(tf.stack(gates_all, axis=1), shape=[-1]) # [batch_size*num_steps]
 		self.gate_names = tf.reduce_mean( tf.gather(gates_all, indices_name) )
 		self.gate_notNames = tf.reduce_mean( tf.gather(gates_all, indices_notName) )

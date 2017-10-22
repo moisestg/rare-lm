@@ -138,6 +138,7 @@ with tf.Graph().as_default():
 				"final_attention_states": model_train.final_attention_states,
 				"final_attention_ids": model_train.final_attention_ids,
 				"train_op": model_train.train_op,
+				"attention_scores": model_train.attention_scores
 			}
 
 			# Iterate through all batches (one epoch)
@@ -203,6 +204,8 @@ with tf.Graph().as_default():
 
 					print("Step: %i: Perplexity: %.3f, Speed: %.0f wps" %
 						(global_step, perplexity, iters * lm_trainData.batch_size / (time.time() - start_time)))
+
+					print(results["attention_scores"])
 
 					start_time = time.time() # reset
 					iters = 0

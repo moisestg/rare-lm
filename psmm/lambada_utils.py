@@ -43,6 +43,17 @@ def tokenizer(line):
 	return line.strip().split()
 
 
+def get_maxLength(data_path):
+	with open(data_path, "r", encoding="utf-8") as f:
+		lines = f.readlines()
+	lines = [tokenizer(example) for example in lines]
+	return len(max(lines, key=len))
+
+
+def relevant_index(row):
+	return max(loc for loc, val in enumerate(row) if val != 0) 
+
+
 def get_vocab(train_path, vocab_size):
 	# Load if already exists
 	pickle_path = os.path.split(train_path)[0]+"/preprocessed/dicts_vocSize"+str(vocab_size)+".pkl"
@@ -83,7 +94,7 @@ def get_vocab(train_path, vocab_size):
 	return [word2id, id2word]
 
 
-def get_wordIDs(data_path, word2id):
+def get_wordIDs(data_path, word2id, pad):
 	# Load if already exists
 	pickle_path = os.path.split(data_path)[0]+"/preprocessed/"+os.path.split(data_path)[1]+"_vocSize"+str(len(word2id))+".pkl"
 	if os.path.exists(pickle_path):
@@ -91,9 +102,13 @@ def get_wordIDs(data_path, word2id):
 		with open(pickle_path, "rb") as f:
 			return pickle.load(f)
 
+	if pad:
+		maxLength = get_maxLength(data_path)
+
 	ids = []
 	with open(data_path, "r", encoding="utf-8") as f:
 		for line in f:
+			word_count = 0
 			for word in tokenizer(line):
 				if word == _BOC: # or word == _EOS
 					ids.append(-1)
@@ -101,6 +116,10 @@ def get_wordIDs(data_path, word2id):
 					ids.append(word2id[word])
 				else:
 					ids.append(word2id[_UNK])
+				word_count += 1
+			if pad:
+				for _ in range(maxLength-word_count):
+					ids.append(word2id[_PAD])
 
 	idsChunks = [list(group) for k, group in groupby(ids, lambda x: x == -1) if not k]
 
@@ -113,13 +132,16 @@ def get_wordIDs(data_path, word2id):
 	return idsChunks
 
 
-def get_switchData(data_path):
+def get_switchData(data_path, pad):
 	# Load if already exists
 	pickle_path = os.path.split(data_path)[0]+"/preprocessed/"+os.path.split(data_path)[1]+".nameTags"+".pkl"
 	if os.path.exists(pickle_path):
 		print("Restoring switch data from: "+pickle_path)
 		with open(pickle_path, "rb") as f:
 			return pickle.load(f)
+
+	if pad:
+		maxLength = get_maxLength(data_path)
 
 	# Load names list
 	with open("./names_list_lower.pkl", "rb") as f:
@@ -128,12 +150,17 @@ def get_switchData(data_path):
 	switchData = []
 	with open(data_path, "r", encoding="utf-8") as f:
 		for line in f:
+			word_count = 0
 			for word in line.strip().split():
 				if word == _BOC: # or word == _EOS
 					switchData.append(-1)
 				if word in names_list:
 					switchData.append(1)
 				else:
+					switchData.append(0)
+				word_count += 1
+			if pad:
+				for _ in range(maxLength-word_count):
 					switchData.append(0)
 
 	switchChunks = [list(group) for k, group in groupby(switchData, lambda x: x == -1) if not k]
@@ -175,18 +202,19 @@ def get_switchData(data_path):
 
 class SlidingGenerator(object):
 
-	def __init__(self, data_path, word2id, batch_size, num_steps, shuffle=False):
+	def __init__(self, data_path, word2id, batch_size, num_steps, shuffle=False, pad=False):
 		self.data_path = data_path
 		self.word2id = word2id
 		self.num_steps = num_steps
 		self.batch_size = batch_size
 		self.shuffle = shuffle
-		self.lmData, self.switchData, self.epoch_size = self.getData(shuffle)
+		self.pad = pad
+		self.lmData, self.switchData, self.epoch_size = self.getData(shuffle, pad)
 		self.generator = self.gen()
 
-	def getData(self, shuffle):
-		idsChunks = get_wordIDs(self.data_path, self.word2id)
-		switchChunks = get_switchData(self.data_path)
+	def getData(self, shuffle, pad):
+		idsChunks = get_wordIDs(self.data_path, self.word2id, pad=pad)
+		switchChunks = get_switchData(self.data_path, pad=pad)
 		# Shuffle
 		if shuffle:
 			both = list(zip(idsChunks, switchChunks))
@@ -213,6 +241,52 @@ class SlidingGenerator(object):
 			lm_x = self.lmData[:, i*num_steps:(i+1)*num_steps]
 			lm_y = self.lmData[:, i*num_steps+1:(i+1)*num_steps+1]
 			switch_y = self.switchData[:, i*num_steps+1:(i+1)*num_steps+1]
+			yield lm_x, lm_y, switch_y
+			
+			if self.shuffle and i == epoch_size-1:
+				self.lmData, self.switchData, _ = self.getData(self.shuffle)
+
+
+class SlidingGeneratorTest(object):
+
+	def __init__(self, data_path, word2id, batch_size, num_steps, shuffle=False, pad=False):
+		self.data_path = data_path
+		self.word2id = word2id
+		self.num_steps = num_steps
+		self.batch_size = batch_size
+		self.shuffle = shuffle
+		self.pad = pad
+		self.lmData, self.switchData, self.epoch_size = self.getData(shuffle, pad)
+		self.generator = self.gen()
+
+	def getData(self, shuffle, pad):
+		idsChunks = get_wordIDs(self.data_path, self.word2id, pad=pad)
+		switchChunks = get_switchData(self.data_path, pad=pad)
+		# Shuffle
+		if shuffle:
+			both = list(zip(idsChunks, switchChunks))
+			random.shuffle(both)
+			idsChunks, switchChunks = zip(*both)
+		# Flatten
+		ids = np.array([item for chunk in idsChunks for item in chunk], dtype=np.int32)
+		switch = np.array([item for chunk in switchChunks for item in chunk], dtype=np.int32)
+		# Shape
+		batch_size = self.batch_size
+		num_steps = self.num_steps
+		lmData = np.reshape(ids, [-1, num_steps+1])
+		switchData = np.reshape(switch, [-1, num_steps+1])
+		epoch_size = lmData.shape[0] // batch_size
+		return lmData, switchData, epoch_size
+
+	def gen(self):
+		epoch_size = self.epoch_size
+		num_steps = self.num_steps
+		batch_size = self.batch_size
+
+		for i in itertools.cycle(range(epoch_size)):
+			lm_x = self.lmData[i*batch_size:(i+1)*batch_size, 0:num_steps]
+			lm_y = self.lmData[i*batch_size:(i+1)*batch_size, 1:num_steps+1]
+			switch_y = self.switchData[i*batch_size:(i+1)*batch_size, 1:num_steps+1]
 			yield lm_x, lm_y, switch_y
 			
 			if self.shuffle and i == epoch_size-1:
@@ -306,6 +380,34 @@ def eval_dev(session, model, lm_data, summary_writer=None):
 
 	return perplexity
 
+def eval_lambada(session, model, lm_data, id2word):
+
+	fetches = {
+		"perplexities": model.perplexities,
+	}
+
+	start_time = time.time()
+
+	perplexity = []
+
+	for step in range(lm_data.epoch_size):
+
+		lm_x, lm_y, switch_y = next(lm_data.generator)
+		feed_dict = {
+			model.lm_x: lm_x,
+			model.lm_y: lm_y,
+			model.switch_y: switch_y.reshape(-1),
+		}
+		results = session.run(fetches, feed_dict)
+		perplexities = results["perplexities"]
+		perplexities = np.reshape(perplexities, [-1, lm_data.num_steps])
+
+		relevant_indexes = np.apply_along_axis(relevant_index, 1, lm_y)
+
+		perplexity.append(np.mean(perplexities[np.arange(len(lm_y)), relevant_indexes]))
+
+	print("Test perplexity: "+str(np.exp(np.mean(perplexity))))
+	print("Time: "+str(time.time()-start_time))
 
 def eval_test(session, model, lm_data, switch_data, id2word):
 

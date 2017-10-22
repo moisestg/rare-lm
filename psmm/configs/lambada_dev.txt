@@ -1,0 +1,14 @@
+--emb_size=200
+--vocab_size=93218
+--num_layers=1
+--hidden_size=512
+--num_steps_eval=170
+--emb_keep_prob=1.0
+--input_keep_prob=1.0
+--output_keep_prob=1.0
+--state_keep_prob=1.0
+--l2_reg=0.0
+--attention_length=100
+--batch_size_eval=1
+--train_path=../lambada-dataset/train_novels_chunks.txt
+--test_path=../lambada-dataset/lambada_test_plain_text.txt
