@@ -23,7 +23,7 @@ Attention models were firstly developed in the field of neural machine translati
 	\end{gathered}
 \end{equation}
 
-Then a decoder (also a deep LSTM network) outputs a translation sentence $o=\{o(1), o(2), \cdots, o(n_o)\}$ using $\mathbf{c}$ as its first input. As shown in \autoref{eq:decoder}, in a similar way as the RNLM models that we saw in \autoref{sec:rnn}, the probability of outputting a word at step $t$ is obtained as the vocabulary softmax of an affine transformation of the hidden state $\mathbf{s}(t)$.
+Then a decoder (also a deep LSTM network) outputs a translation sentence $o=\{o(1), o(2), \cdots, o(n_o)\}$ using $\mathbf{c}$ as its first input. As shown in \autoref{eq:decoder}, in a similar way as the RNNLM that we saw in \autoref{sec:rnn}, the probability of outputting a word at step $t$ is obtained as the vocabulary softmax of an affine transformation of the hidden state $\mathbf{s}(t)$.
 
 \begin{equation} \label{eq:decoder}
 	\begin{gathered}
@@ -85,7 +85,7 @@ Using this classification, the model introduced in the previous section would be
 
 \subsection{Application to Language Modeling}
 
-An adaptation of the attention mechanism for RNLMs that we saw in \ref{sec:rnn} was presented in \cite{daniluk2017frustratingly}. The first adaptation is that due to the extensive length of the texts used in language modeling, for practical reasons the attention span is limited to a window of the previous $L$ hidden states, $Y(t)$. The second is that both the context vector $\mathbf{c}(t)$ and the current hidden state $\mathbf{h}(t)$ are blended into an ``augmented'' hidden state $\mathbf{h^*}(t)$. The remaining aspects of the model are left in the same way as in \cite{bahdanau2014neural}, as we can see in \autoref{eq:attentionLM}.
+An adaptation of the attention mechanism for RNNLMs that we saw in \ref{sec:rnn} was presented in \cite{daniluk2017frustratingly}. The first adaptation is that due to the extensive length of the texts used in language modeling, for practical reasons the attention span is limited to a window of the previous $L$ hidden states, $Y(t)$. The second is that both the context vector $\mathbf{c}(t)$ and the current hidden state $\mathbf{h}(t)$ are blended into an ``augmented'' hidden state $\mathbf{h^*}(t)$. The remaining aspects of the model are left in the same way as in \cite{bahdanau2014neural}, as we can see in \autoref{eq:attentionLM}.
 
 \begin{equation} \label{eq:attentionLM}
 	\begin{gathered}
@@ -102,7 +102,7 @@ where $Y(t) \in \mathbb{R}^{h \times L}$, $W_a,U_a,W_c,W_h \in \mathbb{R}^{h \ti
 \section{Neural Continuous Cache}
 \label{sec:continuousCache}
 
-One of the first attempts at the LAMBADA dataset was introduced in \cite{grave2016improving}. The model takes inspiration from traditional cache models \cite{kuhn1990cache} and adapts this simple technique in order to be used on top of any RNLM. To accomplish that, a cache-like memory is introduced to store pairs $(\mathbf{h}(i),x(i+1))$ as illustrated in \autoref{fig:cache}.
+One of the first attempts at the LAMBADA dataset was introduced in \cite{grave2016improving}. The model takes inspiration from traditional cache models \cite{kuhn1990cache} and adapts this simple technique in order to be used on top of any RNNLM. To accomplish that, a cache-like memory is introduced to store pairs $(\mathbf{h}(i),x(i+1))$ as illustrated in \autoref{fig:cache}.
 
 \begin{figure}[H]
 	\centering
@@ -127,7 +127,7 @@ It can be observed that this formulation resembles the one from the attention mo
 
 where $\lambda$ is a fixed hyperparameter that controls the weight of each distribution and is chosen by optimizing performance on a validation set. 
 
-In summary, the neural continuous cache constitutes a simple yet powerful technique for RNLMs to adapt to the recent history of words. It doesn't require to be trained and thus, it can be applied on top of any pretrained model using big cache sizes.
+In summary, the neural continuous cache constitutes a simple yet powerful technique for RNNLMs to adapt to the recent history of words. It doesn't require to be trained and thus, it can be applied on top of any pretrained model using big cache sizes.
 
 \section{Pointer Sentinel Mixture Model (PSMM)}
 \label{sec:pointerMixture}
@@ -194,7 +194,7 @@ Once the pointer probabilities and the gate have been calculated, the output dis
 	\end{gathered}
 \end{equation}
 
-The loss function used to optimize the model (\autoref{eq:psmmLoss}) is made up of two parts: the first one is the traditional cross-entropy loss used in RNLMs. The second part supervises the pointer component and makes sure that if any probability mass is taken from the vocabulary softmax and given to the pointer, it was the right thing to do (i.e. the correct output $y(t)$ appears one or more times in the window and the pointer assigns its probability to these positions).
+The loss function used to optimize the model (\autoref{eq:psmmLoss}) is made up of two parts: the first one is the traditional cross-entropy loss used in RNNLMs. The second part supervises the pointer component and makes sure that if any probability mass is taken from the vocabulary softmax and given to the pointer, it was the right thing to do (i.e. the correct output $y(t)$ appears one or more times in the window and the pointer assigns its probability to these positions).
 
 \begin{equation} \label{eq:psmmLoss}
 	\begin{gathered}
@@ -225,7 +225,7 @@ This probability is then used as the interpolation weight that controls the blen
 	\end{gathered}
 \end{equation}
 
-Finally, in addition to the cross-entropy loss term used to optimize the RNLM we introduce the sigmoid cross-entropy loss of the switching network to train it in a supervised fashion, as shown in \autoref{eq:smmLoss}.
+Finally, in addition to the cross-entropy loss term used to optimize the RNNLM we introduce the sigmoid cross-entropy loss of the switching network to train it in a supervised fashion, as shown in \autoref{eq:smmLoss}.
 
 \begin{equation} \label{eq:smmLoss}
 	\begin{gathered}

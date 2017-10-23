@@ -85,7 +85,7 @@ Finally, we can see in \autoref{eq:relationCrossAndPP} how cross-entropy and per
 	\text{Perplexity}(W_1^n) = 2^{H(p,m)} = m(W_1^n)^{-\frac{1}{n}}
 \end{equation}
 
-\section{Feed-Forward Neural Language Models (FFNLM)}
+\section{Feed-Forward Neural Network Language Models \\ (FFNNLM)}
 \label{sec:forwardnlm}
 
 Until the appearance of NLMs, the most successful approaches were based on n-grams, which are models that estimate words from a fixed window of previous words and estimate probabilities by counting in a corpus and normalizing. Due to their nature, n-gram estimates intrinsically suffer from sparsity and several methods like smoothing, backoff and interpolation have been proposed to deal with this problem \cite{chen1996empirical}.
@@ -115,12 +115,12 @@ The concatenated word representations $\mathbf{x}$ are fed through one (or more)
 
 Having a look at the full model (shown in \autoref{fig:ffarch}) we can observe that most expensive operation is the computation of the unnormalized probability distribution $\mathbf{y}$, which requires a number of dot products that scales linearly with $|V|$ (it is not unusual to work with vocabulary sizes in the order of the tens of thousands). 
 
-Several practical solutions have been proposed to avoid it, with \textbf{hierarchical softmax} \cite{morin2005hierarchical} being one of the most popular ones. It uses a hierarchical binary tree representation of the vocabulary with words as its leaves and, for each node, explicitly represents the relative probabilities of its child nodes. These define a random walk that assigns probabilities to words, allowing to reduce the complexity of obtaining the output probability of a single word to around $\log_2(|V|)$.
+Several practical solutions have been proposed to avoid it, with \textbf{hierarchical softmax} \cite{mnih2009scalable} being one of the most popular ones. It uses a hierarchical binary tree representation of the vocabulary with words as its leaves and, for each node, explicitly represents the relative probabilities of its child nodes. These define a random walk that assigns probabilities to words, allowing to reduce the complexity of obtaining the output probability of a single word to around $\log_2(|V|)$.
 
 \section{Word Vectors}
 \label{sec:wv}
 
-As we stated in the previous section, distributed continuous vectors allow for ``clever" smoothing by taking into account syntactic and semantic features that are automatically learnt. \cite{mikolov2013efficient} picked up on this concept trying to find ways of training these vector representations more efficiently. The paper introduces a family of models known as \textbf{word2vec}, whose architecture matches the one from a FFNLM where the nonlinear hidden layer has been removed (ending up with a simple log bilinear model). The difference between them lies on the objective they optimize for. It is important to note that these objectives are designed as a mean to learn meaningful word embeddings, which are the main focus of the following architectures:
+As we stated in the previous section, distributed continuous vectors allow for ``clever" smoothing by taking into account syntactic and semantic features that are automatically learnt. \cite{mikolov2013efficient} picked up on this concept trying to find ways of training these vector representations more efficiently. The paper introduces a family of models known as \textbf{word2vec}, whose architecture matches the one from a FFNNLM where the nonlinear hidden layer has been removed (ending up with a simple log bilinear model). The difference between them lies on the objective they optimize for. It is important to note that these objectives are designed as a mean to learn meaningful word embeddings, which are the main focus of the following architectures:
 
 \begin{itemize}
 	\item Continuous Bag-of-Words model (CBOW): given a symmetric window of size $k$ around a specific position $i$ $\{w_{i-k}, \ldots , w_{i-1}, w_{i+1}, \ldots w_{i+k}\}$, we want to predict the word $w_i$. The term ``bag-of-words" comes from the fact that the embeddings of the whole window are summed (instead of concatenated) and thus, order is not preserved.
@@ -147,10 +147,10 @@ In general, word vectors have proven to excel at capturing semantic features. Fo
 
 In summary, word vectors have become a standard in NLP and are used as input in all sorts of downstream applications such as sentiment analysis.
 
-\section{Recurrent Neural Language Models (RNLM)}
+\section{Recurrent Neural Network Language Models \\ (RNNLM)}
 \label{sec:rnn}
 
-So far all the models that we have seen (n-grams and FFNLM) explicitly use a fixed length context. Recurrent neural networks remove this limitation by introducing recurrent connections that allow information to cycle for an arbitrarily long time (although this is not true in practice). They learn to compress the whole history in low dimensional space (hidden state $\mathbf{h}(t)$) that is sequentially updated by being blended with the current input $\mathbf{x}(t)$ (\autoref{eq:rnncell} introduces the formulation for Elman networks).
+So far all the models that we have seen (n-grams and FFNNLM) explicitly use a fixed length context. Recurrent neural networks remove this limitation by introducing recurrent connections that allow information to cycle for an arbitrarily long time (although this is not true in practice). They learn to compress the whole history in low dimensional space (hidden state $\mathbf{h}(t)$) that is sequentially updated by being blended with the current input $\mathbf{x}(t)$ (\autoref{eq:rnncell} introduces the formulation for Elman networks).
 
 \begin{equation} \label{eq:rnncell}
 		\mathbf{h}(t) = \sigma_h(W_h \mathbf{x}(t) + U_h \mathbf{h}(t-1) + \mathbf{b_h})
@@ -158,7 +158,7 @@ So far all the models that we have seen (n-grams and FFNLM) explicitly use a fix
 
 where $W_h \in \mathbb{R}^{h \times m}$, $\mathbf{x}(t) \in \mathbb{R}^{m}$, $U_h \in \mathbb{R}^{h \times h} , \mathbf{h}(t), \mathbf{h}(t-1), \mathbf{b_h} \in \mathbb{R}^{h}$ and $\sigma_h$ is a nonlinear function (e.g. sigmoid). 
 
-It is important to note that the network parameters are shared over time. \cite{mikolov2010recurrent} was one of the first to successfully apply RNNs to language modeling. The hidden states $\mathbf{h}(t)$ are fed through a fully connected layer to produce a probability distribution over the vocabulary in a similar way to FFNLMs.
+It is important to note that the network parameters are shared over time. \cite{mikolov2010recurrent} was one of the first to successfully apply RNNs to language modeling. The hidden states $\mathbf{h}(t)$ are fed through a fully connected layer to produce a probability distribution over the vocabulary in a similar way to FFNNLMs.
 
 \begin{equation} \label{eq:rnnlm}
 	\begin{gathered}
