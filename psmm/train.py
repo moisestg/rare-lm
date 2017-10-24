@@ -205,7 +205,7 @@ with tf.Graph().as_default():
 					print("Step: %i: Perplexity: %.3f, Speed: %.0f wps" %
 						(global_step, perplexity, iters * lm_trainData.batch_size / (time.time() - start_time)))
 
-					print(results["attention_scores"])
+					#print(results["attention_scores"])
 
 					start_time = time.time() # reset
 					iters = 0

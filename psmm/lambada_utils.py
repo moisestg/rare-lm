@@ -244,7 +244,7 @@ class SlidingGenerator(object):
 			yield lm_x, lm_y, switch_y
 			
 			if self.shuffle and i == epoch_size-1:
-				self.lmData, self.switchData, _ = self.getData(self.shuffle)
+				self.lmData, self.switchData, _ = self.getData(self.shuffle, self.pad)
 
 
 class SlidingGeneratorTest(object):
@@ -290,7 +290,7 @@ class SlidingGeneratorTest(object):
 			yield lm_x, lm_y, switch_y
 			
 			if self.shuffle and i == epoch_size-1:
-				self.lmData, self.switchData, _ = self.getData(self.shuffle)
+				self.lmData, self.switchData, _ = self.getData(self.shuffle, self.pad)
 
 
 def eval_dev(session, model, lm_data, summary_writer=None):

@@ -6,7 +6,7 @@ The code is available at \url{https://github.com/moisestg/rare-lm}.
 
 Maybe mention implementation detail of only calculating $p(y(t))$ when training?
 
-When showing the PSMM mention the initialization of $mathbf{s}$ and the issue with the gradient.
+When showing the PSMM mention the initialization of $\mathbf{s}$ and the issue with the gradient.
 
 \begin{table}[]
 	\centering
@@ -26,5 +26,19 @@ When showing the PSMM mention the initialization of $mathbf{s}$ and the issue wi
 		\multicolumn{1}{|c|}{}                                                  & Mixture ($\lambda=100$) & 107.5       & 119        & 8000         & 120K        \\ \hline
 	\end{tabular}
 	\caption{Perplexity}
-	\label{my-label}
+	\label{smmExps}
+\end{table}
+
+
+\begin{table}[]
+	\centering
+	\begin{tabular}{c|c|c|c|}
+		\cline{2-4}
+		\multicolumn{1}{l|}{}                             & \textbf{Control} & \textbf{Dev} & \textbf{Test} \\ \hline
+		\multicolumn{1}{|c|}{\textbf{PSMM (length=100)}}  & 114.4            & 151.3        & 156.6         \\ \hline
+		\multicolumn{1}{|c|}{\textbf{PSMM (length=200)*}} &                  &              &               \\ \hline
+		\multicolumn{1}{|c|}{\textbf{PSMM (length=500)*}} &                  &              &               \\ \hline
+	\end{tabular}
+	\caption{Perplexity on LAMBADA}
+	\label{psmmExps}
 \end{table}

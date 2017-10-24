@@ -19,7 +19,9 @@ Inan et al. (2016) make a case for sharing the weights between the embeddings an
 Similar to other areas of NLP, several memory augmented architectures have been proposed for language modeling. Daniluk et al. (2017) formulate an attention mechanism for RNNLMs \cite{daniluk2017frustratingly} and explores to what extent is the learning of long-range dependencies improved. Grave et al. (2016) and Merity et. al (2016) propose pointer based attention models where a probability distribution is generated over the history of recent words and blended with the distribution over the whole vocabulary. While the former doesn't need to be trained \cite{grave2016improving}, the latter introduces additional parametrization that allows to calculate the interpolation weight of the two distributions dynamically \cite{merity2016pointer}.
 
 A very interesting research direction has been recently proposed by Zoph \& Le (2016), where a reinforcement learning agent is used to generate a custom
-RNN cell tailored to the specific task of language modeling \cite{zoph2016neural}.
+RNN cell architectures tailored to the specific task of language modeling \cite{zoph2016neural}.
+
+With respect to the evaluation of RNNLMs, Melis et al. (2017) stress the importance of careful hyperparemeter tuning and arrive at the conclussion that standard LSTM architectures, when properly regularised, outperform more recent models \cite{melis2017state}. Paperno et al. (2016) raise their concerns with regards to the genuine language understanding of SOTA models and introduce LAMBADA \cite{paperno2016lambada}, a dataset specifically designed to put this to the test. Along these lines, Jia \& Liang (2017) propose a method to build adversarial examples and find out that when evaluated on them, models produce very poor results under standard evaluation metrics \cite{jia2017adversarial}.
 
 \begin{table}[H]
 	\centering
