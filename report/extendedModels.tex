@@ -2,19 +2,14 @@
 
 This chapter describes several recently proposed NLM architectures designed to tackle the rare word prediction problem and highlights the main similarities and differences among them. We also introduce our proposed model called ``Sentinel Mixture''.
 
-\todo{
-	- Do you agree with the order of the sections (our model going last)?
-	- Any other insights regarding our model?
-	}
-
 \section{Attention Models}
 \label{sec:attention}
 
-Although the concept of attention that we are going to introduce is not directly concerned with rare word prediction, it will help us lay the foundations for the subsequent models as they take inspiration from it.
+Although the concept of attention that we are going to introduce is not directly concerned with rare word prediction, it will help us lay the foundations for the subsequent language models as they take inspiration from it.
 
 \subsection{Original Formulation}
 
-Attention models were firstly developed in the field of neural machine translation (NMT) in the seminal paper \cite{bahdanau2014neural}. At that time, most of the proposed NMT models belonged to a family known as ``encoder-decoders'' \cite{sutskever2014sequence}. These models consist of two parts: first an encoder (a deep bidirectional LSTM network) compresses the input sentence (specifically the embeddings for each word) $\{\mathbf{x}(1), \mathbf{x}(2), \cdots, \mathbf{x}(n_x)\}$ into fixed-length vector representation $\mathbf{c}$. This is done by sequentially processing the sentence with a recurrent network and taking the last hidden state $\mathbf{h}(n_x)$ as $\mathbf{c}$ (\autoref{eq:encoder}).
+Attention models were firstly developed in the field of neural machine translation (NMT) in the seminal paper \cite{bahdanau2014neural}. At that time, most of the proposed NMT models belonged to a family known as ``encoder-decoders'' \cite{sutskever2014sequence}. These models consist of two parts: first an encoder (a deep bidirectional LSTM network) compresses the input sentence (specifically the embeddings for each word) $\{\mathbf{x}(1), \mathbf{x}(2), \cdots, \mathbf{x}(n_x)\}$ into a fixed-length vector representation $\mathbf{c}$. This is done by sequentially processing the sentence with a recurrent network and taking the last hidden state $\mathbf{h}(n_x)$ as $\mathbf{c}$ (\autoref{eq:encoder}).
 
 \begin{equation} \label{eq:encoder}
 	\begin{gathered}
@@ -23,7 +18,7 @@ Attention models were firstly developed in the field of neural machine translati
 	\end{gathered}
 \end{equation}
 
-Then a decoder (also a deep LSTM network) outputs a translation sentence $o=\{o(1), o(2), \cdots, o(n_o)\}$ using $\mathbf{c}$ as its first input. As shown in \autoref{eq:decoder}, in a similar way as the RNNLM that we saw in \autoref{sec:rnn}, the probability of outputting a word at step $t$ is obtained as the vocabulary softmax of an affine transformation of the hidden state $\mathbf{s}(t)$.
+Then a decoder (also a deep LSTM network) outputs a translation sentence $o=\{o(1), o(2), \cdots, o(n_o)\}$ using $\mathbf{c}$ as its initial hidden state. As shown in \autoref{eq:decoder}, in a similar way as the RNNLM that we saw in \autoref{sec:rnn}, the probability of outputting a word at step $t$ is obtained as the vocabulary softmax of an affine transformation of the hidden state $\mathbf{s}(t)$.
 
 \begin{equation} \label{eq:decoder}
 	\begin{gathered}
@@ -33,7 +28,7 @@ Then a decoder (also a deep LSTM network) outputs a translation sentence $o=\{o(
 	\end{gathered}
 \end{equation}
 
-A potential problem for this architecture is the fact that all the necessary information from an input sentence has to be encoded into the vector $\mathbf{c}$. Hence, this may make it difficult for the model to deal with long sentences. Instead the decoder is allowed to access the full sequence of the encoder's hidden states $\{\mathbf{h}(1), \mathbf{h}(2), \cdots, \mathbf{h}(n_i)\}$, as shown in \autoref{fig:nmtAttention}.
+A potential problem for this architecture is the fact that all the necessary information from an input sentence has to be encoded into the vector $\mathbf{c}$. Hence, this may make it difficult for the model to deal with long sentences. Instead, an attention layer is added to give the decoder access to the full sequence of the encoder's hidden states $\{\mathbf{h}(1), \mathbf{h}(2), \cdots, \mathbf{h}(n_x)\}$, as shown in \autoref{fig:nmtAttention}.
 
 \begin{figure}[H]
 	\centering
@@ -46,19 +41,19 @@ In this new architecture the decoder is provided with an additional input, the c
 
 \begin{equation} \label{eq:nmtAttention}
 	\begin{gathered}
-		\mathbf{e}(t)_k = e_{tk} = \mathbf{v_a}^{\top} \tanh(W_a \mathbf{s}(t-1)+U_a\mathbf{h}(k)), \; \forall k \in 1, \cdots , n_i  \\
-		\boldsymbol{\alpha}(t)_k = \alpha_{tk} = \frac{e^{e_{tk}}}{\sum_{j}e^{e_{tj}}}, \; \forall k \in 1, \cdots , n_i  \\
-		\mathbf{c}(t) = \sum_{k=1}^{n_i} \alpha_{tk} \mathbf{h}(k)
+		e_{tk} = \mathbf{e}(t)_k = \mathbf{v_a}^{\top} \tanh(W_a \mathbf{s}(t-1)+U_a\mathbf{h}(k)), \; \forall k \in 1, \cdots , n_x  \\
+		\alpha_{tk} = \boldsymbol{\alpha}(t)_k = \frac{e^{e_{tk}}}{\sum_{j}e^{e_{tj}}}, \; \forall k \in 1, \cdots , n_x  \\
+		\mathbf{c}(t) = \sum_{k=1}^{n_x} \alpha_{tk} \mathbf{h}(k)
 	\end{gathered}
 \end{equation}
 
-where $\mathbf{e}(t),\boldsymbol{\alpha}(t) \in \mathbb{R}^{n_i}$, $W_a \in \mathbb{R}^{h \times h}$, $U_a \in \mathbb{R}^{h \times 2h}$, $\mathbf{h}(t) \in \mathbb{R}^{2h}$ and $\mathbf{v_a},\mathbf{s}(t),\mathbf{c}(t) \in \mathbb{R}^{h}$. 
+where $\mathbf{e}(t),\boldsymbol{\alpha}(t) \in \mathbb{R}^{n_x}$, $W_a \in \mathbb{R}^{h \times h}$, $U_a \in \mathbb{R}^{h \times 2h}$, $\mathbf{h}(t) \in \mathbb{R}^{2h}$ and $\mathbf{v_a},\mathbf{s}(t),\mathbf{c}(t) \in \mathbb{R}^{h}$. 
 
 First, a vector of attention scores $\mathbf{e}(t)$ is calculated in order to see how much each input word should be ``attended'' with respect to the current decoder step. These are obtained with a single-layer multilayer perceptron. Next, the scores are normalized via a softmax operation producing the attention weights (can also be interpreted as probabilities)  $\boldsymbol{\alpha}(t)$. Finally, the context vector $\mathbf{c}(t)$ is obtained as a convex combination of all the encoder's hidden states weighted by $\boldsymbol{\alpha}(t)$.
 
-\subsection{Classification}
+\subsection{Types of Attention}
 
-Since its introduction, attention has become very popular in NLP and has been applied successfully in other areas such as computer vision \cite{xu2015show}, originating the appearance of multiple variants. Thus, we introduce one possible classification (inspired by \cite{luongeffective}) of such models attending to three different aspects:
+Since its introduction, attention has been applied successfully in other areas such as computer vision \cite{xu2015show} and adapted for many other NLP tasks. In this section we introduce one possible classification (inspired by \cite{luongeffective}) of such models attending to three different aspects:
 
 \begin{itemize}
 	\item  Depending on the attention's span:
@@ -85,11 +80,11 @@ Using this classification, the model introduced in the previous section would be
 
 \subsection{Application to Language Modeling}
 
-An adaptation of the attention mechanism for RNNLMs that we saw in \ref{sec:rnn} was presented in \cite{daniluk2017frustratingly}. The first adaptation is that due to the extensive length of the texts used in language modeling, for practical reasons the attention span is limited to a window of the previous $L$ hidden states, $Y(t)$. The second is that both the context vector $\mathbf{c}(t)$ and the current hidden state $\mathbf{h}(t)$ are blended into an ``augmented'' hidden state $\mathbf{h^*}(t)$. The remaining aspects of the model are left in the same way as in \cite{bahdanau2014neural}, as we can see in \autoref{eq:attentionLM}.
+An adaptation of the attention mechanism for RNNLMs that we saw in \ref{sec:rnn} was presented in \cite{daniluk2017frustratingly}. The first modification is that due to the extensive length of the texts used in language modeling, for practical reasons the attention span is limited to a window of the previous $L$ hidden states, $Y(t)$. The second is that both the context vector $\mathbf{c}(t)$ and the current hidden state $\mathbf{h}(t)$ are blended into an ``augmented'' hidden state $\mathbf{h^*}(t)$. The remaining aspects of the model are left in the same way as in \cite{bahdanau2014neural}, as we can see in \autoref{eq:attentionLM}.
 
 \begin{equation} \label{eq:attentionLM}
 	\begin{gathered}
-		Y(t) = [\mathbf{h}(t-L) ; \cdots ; \mathbf{h}(t-1)] \\
+		Y(t) = [\mathbf{h}(t-1) ; \cdots ; \mathbf{h}(t-L)] \\
 		\mathbf{e}(t) = \mathbf{v_a}^{\top} \tanh(W_a Y(t) + U_a\mathbf{h}(t)\mathbf{1}^{\top}) \\
 		\boldsymbol{\alpha}(t) = \text{softmax}(\mathbf{e}(t)) \\
 		\mathbf{c}(t) = Y(t)\boldsymbol{\alpha}(t)^{\top} \\
@@ -97,12 +92,12 @@ An adaptation of the attention mechanism for RNNLMs that we saw in \ref{sec:rnn}
 	\end{gathered}	
 \end{equation}
 
-where $Y(t) \in \mathbb{R}^{h \times L}$, $W_a,U_a,W_c,W_h \in \mathbb{R}^{h \times h}$, $\mathbf{v_a},\mathbf{h}(t),\mathbf{s}(t),\mathbf{c}(t),\mathbf{h^*}(t) \in \mathbb{R}^{h}$ and $\mathbf{e}(t), \mathbf{1}, \boldsymbol{\alpha}(t) \in \mathbb{R}^{L}$.
+where $Y(t) \in \mathbb{R}^{h \times L}$, $W_a,U_a,W_c,W_h \in \mathbb{R}^{h \times h}$, $\mathbf{v_a},\mathbf{h}(t),\mathbf{s}(t),\mathbf{c}(t),\mathbf{h^*}(t) \in \mathbb{R}^{h}$, $\mathbf{e}(t), \boldsymbol{\alpha}(t) \in \mathbb{R}^{1 \times L}$ and $\mathbf{1} \in \mathbb{R}^{L}$.
 
 \section{Neural Continuous Cache}
 \label{sec:continuousCache}
 
-One of the first attempts at the LAMBADA dataset was introduced in \cite{grave2016improving}. The model takes inspiration from traditional cache models \cite{kuhn1990cache} and adapts this simple technique in order to be used on top of any RNNLM. To accomplish that, a cache-like memory is introduced to store pairs $(\mathbf{h}(i),x(i+1))$ as illustrated in \autoref{fig:cache}.
+One of the first attempts at the LAMBADA dataset was introduced in \cite{grave2016improving}. The model takes inspiration from traditional cache models \cite{kuhn1990cache} and adapts this simple technique in order to be used on top of any recurrent language model. To accomplish that, a cache-like memory is introduced to store key-value pairs $(\mathbf{h}(i),x(i+1))$ as illustrated in \autoref{fig:cache}.
 
 \begin{figure}[H]
 	\centering
@@ -125,9 +120,9 @@ It can be observed that this formulation resembles the one from the attention mo
 	p(w|\mathbf{h}(1\ldots t)) = (1-\lambda)p_{\text{vocab}}(w|\mathbf{h}(t)) + \lambda p_{\text{cache}}(w|\mathbf{h}(1\ldots t))
 \end{equation}
 
-where $\lambda$ is a fixed hyperparameter that controls the weight of each distribution and is chosen by optimizing performance on a validation set. 
+where $\lambda$ is a fixed hyperparameter that controls the linear interpolation weight of each distribution and is chosen by optimizing performance on a validation set. 
 
-In summary, the neural continuous cache constitutes a simple yet powerful technique for RNNLMs to adapt to the recent history of words. It doesn't require to be trained and thus, it can be applied on top of any pretrained model using big cache sizes.
+In summary, the neural continuous cache constitutes a simple yet powerful technique for RNNLMs to adapt to the recent history of words. By design, it doesn't require to be trained and thus, it can be applied on top of any pretrained model using big cache sizes.
 
 \section{Pointer Sentinel Mixture Model (PSMM)}
 \label{sec:pointerMixture}
@@ -145,14 +140,14 @@ Given an input $x$ that consists of the sequence $\{w_1, \cdots , w_t\}$ of inpu
 
 \begin{equation} \label{eq:psmmMemory}
 	\begin{gathered}
-		M(t) = \begin{bmatrix} \mathbf{h}(t); & \cdots; & \mathbf{h}(t-L+1) \end{bmatrix} \\
+		M(t) = [\mathbf{h}(t); \cdots; \mathbf{h}(t-L+1) ] \\
 		\mathbf{m}(t) = [w_t; \cdots; w_{t-L+1}] \\
 	\end{gathered}
 \end{equation}
 
 where $M(t) \in \mathbb{R}^{H \times L}$ and $\mathbf{m}(t) \in \mathbb{R}^{L}$. 
 
-In order to obtain the attention scores $\mathbf{z}(t)$ over the window, the easiest way is to compute the dot product between the current hidden state $\mathbf{h}(t)$ and all the hidden states in the window (like in \autoref{sec:continuousCache}). However the window also contains $\mathbf{h}(t)$ as this word may be repeated ($w_{t+1}$ is equal to $w_t$), and as the dot product of a vector with itself results in its magnitude squared, the attention scores would be biased towards the last word. This is avoided by projecting $\mathbf{h}(t)$ into a query vector $\mathbf{q}(t)$ (\autoref{eq:psmmScores}).
+In order to obtain the attention scores $\mathbf{z}(t)$ over the window, the easiest way is to compute the dot product between the current hidden state $\mathbf{h}(t)$ and all the hidden states in the window (like in \autoref{sec:continuousCache}). However the window also contains $\mathbf{h}(t)$ as this word may be repeated ($w_{t+1}$ is equal to $w_t$), and as the dot product of a vector with itself results in its magnitude squared, the attention scores would be biased towards the last word. Therefore the authors chose to avoid this by projecting $\mathbf{h}(t)$ into a query vector $\mathbf{q}(t)$ (\autoref{eq:psmmScores}).
 
 \begin{equation} \label{eq:psmmScores}
 	\begin{gathered} 
@@ -183,7 +178,7 @@ It can be seen in \autoref{eq:psmmSentinel} that the values $\mathbf{a}(t)_{1:L}
 	\end{gathered}
 \end{equation}
 
-where $p_{\text{ptr}}(w|\mathbf{h}(1\ldots t)) \in \mathbb{R}^{L}$, $p_{\text{ptr}}(w=i|\mathbf{h}(1\ldots t)) \in \mathbb{R}$ and $I(i, \; \mathbf{m}(t))$ results in all positions where $\mathbf{m}(t)$ (the window of previous word IDs) is equal to $i$.
+where $p_{\text{ptr}}(w|\mathbf{h}(1\ldots t)) \in \mathbb{R}^{L}$, $p_{\text{ptr}}(w=i|\mathbf{h}(1\ldots t)) \in \mathbb{R}$ and $I(i, \; \mathbf{m}(t))$ results in all positions of $\mathbf{m}(t)$ (the window of previous word IDs) that are equal to $i$.
 
 Once the pointer probabilities and the gate have been calculated, the output distribution is obtained as:
 
@@ -194,7 +189,7 @@ Once the pointer probabilities and the gate have been calculated, the output dis
 	\end{gathered}
 \end{equation}
 
-The loss function used to optimize the model (\autoref{eq:psmmLoss}) is made up of two parts: the first one is the traditional cross-entropy loss used in RNNLMs. The second part supervises the pointer component and makes sure that if any probability mass is taken from the vocabulary softmax and given to the pointer, it was the right thing to do (i.e. the correct output $y(t)$ appears one or more times in the window and the pointer assigns its probability to these positions).
+The loss function used to optimize the model (\autoref{eq:psmmLoss}) is made up of two parts: the first one is the traditional cross-entropy loss used in RNNLMs. An intuitive explanation for the second part is that it supervises the pointer component and makes sure that if any probability mass is taken from the vocabulary softmax and given to the pointer, it was the right thing to do (i.e. the correct output $y(t)$ appears one or more times in the window and the pointer assigns its probability to these positions).
 
 \begin{equation} \label{eq:psmmLoss}
 	\begin{gathered}
@@ -204,19 +199,20 @@ The loss function used to optimize the model (\autoref{eq:psmmLoss}) is made up 
 	\end{gathered}
 \end{equation}
 
-\section{Softmax Mixture Model (SMM)}
+\section{Our approach: Softmax Mixture Model (SMM)}
 \label{sec:mixtureModel}
 
-To conclude this chapter we introduce our proposed model called ``Softmax Mixture''. Inspired by the models introduced in the previous sections, we also use two components that are blended with a dynamically calculated weight. In our case both components are of the same type, softmax distributions over the whole vocabulary (as in \autoref{sec:rnn}).
+To conclude this chapter we introduce our proposed model called the ``Softmax Mixture''. Inspired by the models detailed in the previous sections, we also use two components that are blended with a dynamically calculated weight. In our case both components are of the same type, softmax distributions over the whole vocabulary (as in \autoref{sec:rnn}).
 
-Similar to \cite{gulcehre2016pointing}, we define a binary variable $z_t$ that indicates whether the output word comes from one of the two distributions. Then, a switching network that takes as input the current hidden state $\mathbf{h}(t)$ outputs a scalar probability $p(z_t=1|\mathbf{h}(t))$: 
+Similar to \cite{gulcehre2016pointing}, we define a binary variable $z_t$ that indicates which distribution (out of two)  produced the output word. Then, a switching network that takes as input the current hidden state $\mathbf{h}(t)$ outputs a scalar probability $p(z_t=1|\mathbf{h}(t))$:
+
 \begin{equation} \label{eq:probSwitch}
 	p(z_t=1|\mathbf{h}(t)) = \sigma(f(\mathbf{h}(t);\theta))
 \end{equation}
 
 where $\sigma(\cdot)$ is the sigmoid function and $f(\cdot)$ is a multilayer perceptron.
 
-This probability is then used as the interpolation weight that controls the blending of the two distributions. With this we hope that the model learns two differentiated vocabulary distributions and when to use them (based on the hidden representation $\mathbf{h}(t)$). 
+This probability is then used as the interpolation weight that controls the blending of the two distributions. With this architecture we want to fulfill two objectives: be able to distinguish the correct source of each word (by means of the supervised switching network) and fit two differentiated output distributions that match the characteristics of each source. 
 
 \begin{equation} \label{eq:smm}
 	\begin{gathered}
