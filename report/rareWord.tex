@@ -1,38 +1,51 @@
 \chapter{Rare Word Prediction}
 
-This chapter introduces
-
-\todo{Finish this}
-
-\section{Problem Description}
-\label{sec:problemRare}
-
-Talk about the well known problem of static language models and lack of adaptation
-
-\cite{gulcehre2016pointing} describes the rare word problem with the vocab softmax and so on. Rare words won't generalize
-
-overly stable
+In this chapter we present the LAMBADA dataset, which will be used throughout this thesis to evaluate our different models. We also discuss the rare word problem and examine several RNN regularization techniques.
 
 \section{The LAMBADA dataset}
 \label{sec:lambada}
 
-This dataset was first introduced in \cite{paperno2016lambada} as a challenging test set specifically designed to probe the genuine language understanding of state-of-the-art NLP models, since in words of the authors \textit{``models' effectiveness at picking statistical generalizations from large corpora can lead to the illusion that they are reaching a deeper degree of understanding than they really are''}. And it does so by casting language understanding in
-the classic word prediction framework of language modeling. An example of the dataset can be seen in \autoref{fig:lambadaPassage}.
+This dataset was first introduced in \cite{paperno2016lambada} as a challenging test set specifically designed to probe the genuine language understanding of state-of-the-art NLP models. In the authors' words, \textit{``models' effectiveness at picking statistical generalizations from large corpora can lead to the illusion that they are reaching a deeper degree of understanding than they really are''}. Below we can find an example extracted from the dataset:
 
 \begin{figure}[H]
+	\begin{mdframed}[linewidth=1pt]
 	\begin{quote} 		
-		 \textbf{Context:} \textit{``Why?'' ``I would have thought you'd find him rather dry,'' she said. ``I don’t know about that,'' said \underline{Gabriel}. ``He was a great craftsman,'' said Heather. ``That he was,'' said Flannery.} \par
+		\textbf{Context:} \textit{``Why?'' ``I would have thought you'd find him rather dry,'' she said. ``I don’t know about that,'' said \underline{Gabriel}. ``He was a great craftsman,'' said Heather. ``That he was,'' said Flannery.} \par
 		\textbf{Target sentence:} \textit{``And Polish, to boot,'' said $\rule{1.2cm}{0.15mm}$} . \par
 		\textbf{Target word:} \textit{Gabriel}
 	\end{quote}
+	\end{mdframed}
 	\caption{Example of a LAMBADA passage} \label{fig:lambadaPassage}
 \end{figure}
 
-MAYBE... -> tests the ability of language models to handle long-range dependencies. Their method relies on the availability of a large initial dataset, from which they distill a difficult subset
+As illustrated in \autoref{fig:lambadaPassage}, the dataset consists of narrative passages formed by a \textit{context paragraph} (with an average length of 4.6 sentences) and a \textit{target sentence}. The objective is to predict the last word of the target sentence (known as the \textit{target word}). In this way, LAMBADA casts the complex task of evaluating language understanding into the simple and general word prediction framework of language modeling.
 
-\subsection{Dataset Construction}
+\subsection{Construction Process}
 
-LAMBADA was built using the Book Corpus dataset \cite{zhu2015aligning}, which features 5325 unpublished novels and 465 million words. It was divided
+LAMBADA was built using a large initial dataset, BookCorpus , which was then distilled into a difficult subset. The original dataset features 5325 unpublished novels (after duplicate removal) and 465 million words \cite{zhu2015aligning}. Novels were then randomly divided into equally-sized training and development+test partitions. Models tackling LAMBADA are intended to be trained on raw text from the training partition, which encompasses 2662 novels and more than 200 million words.
 
-\subsection{Analysis}
+In order to obtain the LAMBADA passages, an automated filtering step was first applied to the development+test partition. Specifically, passages from the initial candidate set were discarded if the target word was given a probability $\geq 0.00175$ by any of the four different standard language models (both neural and count based) that were used in this stage of the process.
 
+To make it into the final dataset, the remaining passages were then evaluated by human subjects in a three-step process:
+
+\begin{enumerate}
+	\item A human evaluator had to guess the target word correctly based on the whole passage (comprising the context and the target sentence).
+	\item A second human evaluator had to also guess the target word correctly in the same conditions.
+	\item Finally, ten human evaluators had to fail at guessing the target word having access to only the target sentence and 3 allowed attempts.
+\end{enumerate}
+
+Due to the specific design of this process, the passages that finally were selected have the property of not being guessable by just relying on local context and require broader understanding, probing the long range capabilities of language models. The final development and test sets consist of 4869 and 5153 passages, respectively. Additionally, a control set containing 5000 unfiltered passages was also constructed to allow for comparisons between standard language modeling scenarios and LAMBADA.
+
+\subsection{Dataset Analysis}
+
+\section{The Rare Word Problem}
+\label{sec:problemRare}
+
+Talk about the well known problem of static language models and lack of adaptation -> cache models?
+
+\cite{gulcehre2016pointing} describes the rare word problem with the vocab softmax and so on. Rare words won't generalize
+
+overly stable?? -> NO!
+
+\section{RNN Regularization}
+\label{sec:rnnRegularization}
