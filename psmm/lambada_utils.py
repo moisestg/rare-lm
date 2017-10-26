@@ -384,11 +384,13 @@ def eval_lambada(session, model, lm_data, id2word):
 
 	fetches = {
 		"perplexities": model.perplexities,
+		"gates": model.gates_all,
+		"cache_probs": model.attention_cacheProbs_all
 	}
 
 	start_time = time.time()
 
-	perplexity = []
+	perplexity_all = []
 
 	for step in range(lm_data.epoch_size):
 
@@ -399,14 +401,24 @@ def eval_lambada(session, model, lm_data, id2word):
 			model.switch_y: switch_y.reshape(-1),
 		}
 		results = session.run(fetches, feed_dict)
+
 		perplexities = results["perplexities"]
 		perplexities = np.reshape(perplexities, [-1, lm_data.num_steps])
+		gates = results["gates"]
+		gates = np.reshape(gates, [-1, lm_data.num_steps])
+		cache_probs = results["cache_probs"]
 
 		relevant_indexes = np.apply_along_axis(relevant_index, 1, lm_y)
+		perplexity_all.append(np.mean(perplexities[np.arange(len(lm_y)), relevant_indexes]))
 
-		perplexity.append(np.mean(perplexities[np.arange(len(lm_y)), relevant_indexes]))
+		relevant_gates = gates[np.arange(len(lm_y)), relevant_indexes]
+		cache_indexes = [relevant_indexes[i]+i*lm_data.num_steps for i in range(lm_data.batch_size)]
+		relevant_probs = cache_probs[cache_indexes, :]
+		with open("gatesProbs.txt", "a") as fout:
+			for i in range(lm_data.batch_size):
+				fout.write(str(relevant_gates[i])+" / "+str(relevant_probs[i,:])+"\n")
 
-	print("Test perplexity: "+str(np.exp(np.mean(perplexity))))
+	print("Test perplexity: "+str(np.exp(np.mean(perplexity_all))))
 	print("Time: "+str(time.time()-start_time))
 
 def eval_test(session, model, lm_data, switch_data, id2word):

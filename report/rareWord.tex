@@ -34,9 +34,48 @@ To make it into the final dataset, the remaining passages were then evaluated by
 	\item Finally, ten human evaluators had to fail at guessing the target word having access to only the target sentence and 3 allowed attempts.
 \end{enumerate}
 
-Due to the specific design of this process, the passages that finally were selected have the property of not being guessable by just relying on local context and require broader understanding, probing the long range capabilities of language models. The final development and test sets consist of 4869 and 5153 passages, respectively. Additionally, a control set containing 5000 unfiltered passages was also constructed to allow for comparisons between standard language modeling scenarios and LAMBADA.
+Due to the specifics of this process, the passages that finally were selected have the property of not being guessable by just relying on local context and require broader understanding, probing the long range capabilities of language models. The final development and test sets that constitute LAMBADA consist of 4869 and 5153 passages, respectively. Additionally, a control set containing 5000 unfiltered passages was also constructed to allow for comparisons between standard language modeling scenarios and LAMBADA.
 
 \subsection{Dataset Analysis}
+
+The authors theorize that the inspection of the LAMBADA data suggests that, in order for the target word to be predictable in a broad context only (which is the case of LAMBADA by design), it must be strongly cued in the broader discourse. \autoref{fig:lambadaContext} compares the proportion of passages in the LAMBADA and control sets that include the target word in the context:
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[scale=0.55]{lambadaContext}
+	\captionof{figure}{Target word appears in passage.}
+	\label{fig:lambadaContext}
+\end{figure}
+
+Indeed, in 84.7 \% of the LAMBADA items the target word (or its lemma, extracted with \texttt{nltk}'s WordNetLemmatizer) is mentioned in the context in the context, compared to the 15.3 \% for the control set. Furthermore, we can study the mention distance (understood as the number of words between the target word and its mention) distribution for LAMBADA. As illustrated in \autoref{fig:lambadaDistance}, 73 \% of the mentions are at a distance of more than 30 words (LAMBADA passages feature an average length of 75 words). This is specially important as many of the publicly available RNNLMs implementations are trained with TBPTT using a $k_2$ somewhere between 20 and 35.
+ 
+\begin{figure}[H]
+	\centering
+	\includegraphics[scale=0.55]{lambadaDistance}
+	\captionof{figure}{Target word appears in passage.}
+	\label{fig:lambadaDistance}
+\end{figure}
+
+Moreover, it is also interesting to study the part of speech (PoS) tag distribution of the target words (also extracted with \texttt{nltk}'s default PoS tagger). As shown in \autoref{fig:lambadaPos}, proper nouns lead (48.1\%) followed by common nouns (37\%) and, far-off, verbs
+(7.7\%). By comparing with control's PoS distribution, it is clear that proper nouns are over-represented in LAMBADA while the rest of the categories are downplayed.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[scale=0.55]{lambadaPos}
+	\captionof{figure}{Target words' PoS distribution (PN=proper noun, CN=common noun, V=verb, ADJ=adjective, ADV=adverb, O=other).}
+	\label{fig:lambadaPos}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[scale=0.55]{lambadaPosAndContext}
+	\captionof{figure}{LAMBADA target words' PoS distribution.}
+	\label{fig:lambadaPosAndContext}
+\end{figure}
+
+The authors argue that the reason for this bias is the fact that proper nouns are favored by the specific setup. Namely, in many cases the context clearly demands a referential expression and the constraint of predicting a single word excludes other possibilities such as noun phrases with articles. This hypothesis seems to be confirmed by \autoref{fig:lambadaPosAndContext}, which shows the PoS distribution for LAMBADA split depending on whether the target word appears in the context. It can be seen that explicit mention in the preceding discourse context is critical for proper nouns (when the target word doesn't previously appear in the passage, none of them are proper nouns), while the other categories can often be guessed without having been explicitly introduced.
+
+To sum up, we can conclude that LAMBADA does indeed put to the test language models' capabilities to exploit \textbf{long-range dependencies}. Besides, it is also important to note the bias towards proper nouns present in the dataset. Proper nouns are used to refer unique entities (e.g. the name of a specific character in a book) and due to their very nature, they are \textbf{rare words} (when compared to the rest of the training corpus). We will describe this phenomena in detail in the next section.
 
 \section{The Rare Word Problem}
 \label{sec:problemRare}
@@ -45,7 +84,49 @@ Talk about the well known problem of static language models and lack of adaptati
 
 \cite{gulcehre2016pointing} describes the rare word problem with the vocab softmax and so on. Rare words won't generalize
 
-overly stable?? -> NO!
+\begin{figure}[H]
+	\centering
+	\begin{subfigure}{.5\textwidth}
+		\centering
+		\includegraphics[scale=0.325]{perplexity_all}
+		\caption{All words}
+		\label{fig:perplexity_all}
+	\end{subfigure}%
+	\begin{subfigure}{.5\textwidth}
+		\centering
+		\includegraphics[scale=0.325]{perplexity_names}
+		\caption{Only names}
+		\label{fig:perplexity_names}
+	\end{subfigure}
+	\caption{Perplexity traces.}
+	\label{fig:perplexity}
+\end{figure}
 
 \section{RNN Regularization}
 \label{sec:rnnRegularization}
+
+In this section we will describe in detail several modern techniques for regularizing recurrent neural networks:
+
+\subsection{Dropout}
+
+Start with original Dropout paper
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[scale=0.2]{dropout}
+	\captionof{figure}{Naive Dropout \cite{gal2016theoretically}.}
+	\label{fig:dropout}
+\end{figure}
+
+\subsection{Variational Dropout}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[scale=0.2]{varDropout}
+	\captionof{figure}{Variational Dropout \cite{gal2016theoretically}.}
+	\label{fig:varDropout}
+\end{figure}
+
+\subsection{Zoneout}
+
+\subsection{Weight Dropout}
