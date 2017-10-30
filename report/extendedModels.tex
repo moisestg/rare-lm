@@ -131,7 +131,7 @@ Presented in \cite{merity2016pointer}, this model is characterized by the introd
 
 \begin{figure}[H]
 	\centering
-	\includegraphics[scale=0.22]{psmm}
+	\makebox[\textwidth][c]{\includegraphics[scale=0.22]{psmm}}
 	\captionof{figure}{Pointer Sentinel Mixture Model architecture \cite{merity2016pointer}.}
 	\label{fig:psmm}
 \end{figure}
@@ -212,7 +212,7 @@ Similar to \cite{gulcehre2016pointing}, we define a binary variable $z_t$ that i
 
 where $\sigma(\cdot)$ is the sigmoid function and $f(\cdot)$ is a multilayer perceptron.
 
-This probability is then used as the interpolation weight that controls the blending of the two distributions. With this architecture we want to fulfill two objectives: be able to distinguish the correct source of each word (by means of the supervised switching network) and fit two differentiated output distributions that match the characteristics of each source. 
+This probability is then used as the interpolation weight that controls the blending of the two distributions. With this architecture we want to fulfill two objectives: being able to distinguish the correct source of each word (by means of the switching network) and fitting two differentiated output distributions that match the characteristics of each source. 
 
 \begin{equation} \label{eq:smm}
 	\begin{gathered}
