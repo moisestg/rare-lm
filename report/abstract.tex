@@ -1,13 +1,9 @@
 \begin{abstract}
 	
-Language models 
- 
-Should be aimed for a person already familiar with the topic!  
-  
-Discourse understanding summarizes a speaker’s ability to perform multi-sentence reasoning. This in turn requires temporal reasoning, resolving co-reference chains, identifying named entities and keeping track of the state of a conversation. In language modeling, the de-facto standard task for text generation systems, deep neural network have become the state of the art. Attempts to transfer similar architectures to a dialogue task directly, have revealed the lack of a rigorous evaluation metric 
+Recurrent neural network language models (RNNLM) have become a key element for state-of-the-art language modeling and are integral parts in a wide range of applications such as speech recognition or information retrieval systems. However, recent attempts have revealed the lack of genuine understanding of standard language models. In particular, the LAMBADA dataset consists of a collection of hard word prediction examples that require to keep track of information in the broader discourse. 
 
-As a middle ground, newly released datasets try to cast existing NLP problems in a discourse context. For example, collects hard word-prediction tasks to put to the test genuine understanding of language models. To succeed on this task, a language model cannot simply rely on local context, but must be able to keep track of information in the broader discourse. However, the established evaluation methodologies from language modeling still apply. 
-  
-Previous work like have shown that plain RNNs’ memory representation may not be enough to effectively capture long term dependencies. Thus, several approaches have been proposed to tackle this problem: attention , memory networks or latent variable RNNs, among others. In this thesis we implement several baselines of enhanced language models using some of the aforementioned techniques and evaluate them on hard-word prediction tasks like. Based on our empirical findings, we propose and compare extensions to tackle the identified shortcomings.
-  
+In this thesis we delve into the nature of LAMBADA and highlight the impact that rare words have on the overall results. We introduce our proposed model, the Softmax Mixture, and showcase through a series of experiments its ability to handle rare words when compared to vanilla RNNLMs. We further implement the Pointer Sentinel Mixture model and demonstrate that it achieves perplexities on par with the state-of-the-art on LAMBADA while having superior adaptation capabilities.
+
+\noindent\textbf{Keywords:} language modeling, recurrent neural networks (RNN), LAMBADA dataset, rare word problem, pointer models.
+ 
 \end{abstract}

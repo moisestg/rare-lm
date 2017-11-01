@@ -22,9 +22,9 @@ As illustrated in \autoref{fig:lambadaPassage}, the dataset consists of narrativ
 
 \subsection{Construction Process}
 
-LAMBADA was built using a large initial dataset, BookCorpus , which was then distilled into a difficult subset. The original dataset features 5325 unpublished novels (after duplicate removal) and 465 million words \cite{zhu2015aligning}. Novels were then randomly divided into equally-sized training and development+test partitions. Models tackling LAMBADA are intended to be trained on raw text from the training partition, which encompasses 2662 novels and more than 200 million words.
+LAMBADA was built using a large initial dataset, BookCorpus, which was then distilled into a difficult subset. The original dataset features 5325 unpublished novels (after duplicate removal) and 465 million words \cite{zhu2015aligning}. Novels were then randomly divided into equally-sized training and development+test partitions. Models tackling LAMBADA are intended to be trained on raw text from the training partition, which encompasses 2662 novels and more than 200 million words.
 
-In order to obtain the LAMBADA passages, an automated filtering step was first applied to the development+test partition. Specifically, passages from the initial candidate set were discarded if the target word was given a probability $\geq 0.00175$ by any of the four different standard language models (both neural and count based) that were used in this stage of the process.
+In order to obtain the LAMBADA passages, an automated filtering step was first applied to the development+test partition. In particular, passages from the initial candidate set were discarded if the target word was given a probability $\geq 0.00175$ by any of the four different standard language models (both neural and count based) that were used in this stage of the process.
 
 To make it into the final dataset, the remaining passages were then evaluated by human subjects in a three-step process:
 
@@ -38,51 +38,50 @@ Due to the specifics of this process, the passages that finally were selected ha
 
 \subsection{Dataset Analysis}
 
-The authors theorize that the inspection of the LAMBADA data suggests that, in order for the target word to be predictable in a broad context only (which is the case of LAMBADA by design), it must be strongly cued in the broader discourse. \autoref{fig:lambadaContext} compares the proportion of passages in the LAMBADA and control sets that include the target word in the context:
+The authors theorize that the inspection of the LAMBADA data suggests that, in order for the target word to be predictable in a broad context only (which is the case of LAMBADA by design), it must be strongly cued in the broader discourse. \autoref{fig:lambadaContext} compares the proportion of passages in the LAMBADA and control sets that include the target word in the context.
 
 \begin{figure}[H]
 	\centering
-	\includegraphics[scale=0.55]{lambadaContext}
-	\captionof{figure}{Target word appears in passage.}
+	\includegraphics[scale=0.53]{lambadaContext}
+	\captionof{figure}{Percentage of passages that contain the target word in the context.}
 	\label{fig:lambadaContext}
 \end{figure}
 
-Indeed, in 84.7 \% of the LAMBADA items the target word (or its lemma, extracted with \texttt{nltk}'s WordNetLemmatizer) is mentioned in the context in the context, compared to the 15.3 \% for the control set. Furthermore, we can study the mention distance (understood as the number of words between the target word and its mention) distribution for LAMBADA. As illustrated in \autoref{fig:lambadaDistance}, 73 \% of the mentions are at a distance of more than 30 words (LAMBADA passages feature an average length of 75 words). This is specially important as many of the publicly available RNNLMs implementations are trained with TBPTT using $k_2$ somewhere between 20 and 35.
+In 84.7 \% of the LAMBADA items the target word (or its lemma, extracted with \texttt{nltk}'s WordNetLemmatizer) is mentioned in the context, compared to the 15.3 \% for the control set. Furthermore, we can study the mention distance (understood as the number of words between the target word and its mention) distribution for LAMBADA. As illustrated in \autoref{fig:lambadaDistance}, 73 \% of the mentions are at a distance of more than 30 words (LAMBADA passages feature an average length of 75 words). This is specially important as many of the publicly available RNNLMs implementations are trained with TBPTT using $k_2$ somewhere between 20 and 35.
  
 \begin{figure}[H]
 	\centering
-	\includegraphics[scale=0.55]{lambadaDistance}
-	\captionof{figure}{Target word appears in passage.}
+	\includegraphics[scale=0.53]{lambadaDistance}
+	\captionof{figure}{Distribution of average distance between the target word and a previous mention in LAMBADA.}
 	\label{fig:lambadaDistance}
 \end{figure}
 
-Moreover, it is also interesting to study the part of speech (PoS) tag distribution of the target words (also extracted with \texttt{nltk}'s default PoS tagger). As shown in \autoref{fig:lambadaPos}, proper nouns lead (48.1\%) followed by common nouns (37\%) and, far-off, verbs
-(7.7\%). By comparing with control's PoS distribution, it is clear that proper nouns are over-represented in LAMBADA while the rest of the categories are downplayed.
+Moreover, it is also interesting to study the part of speech (PoS) tag distribution of the target words (also extracted with \texttt{nltk}'s default PoS tagger). As shown in \autoref{fig:lambadaPos}, the largest portion of target words are proper nouns (48.1\%) followed by common nouns (37\%) and, far-off, verbs (7.7\%). By comparing with control's PoS distribution, it is clear that proper nouns are over-represented in LAMBADA while the rest of the categories are downplayed.
 
 \begin{figure}[H]
 	\centering
-	\includegraphics[scale=0.55]{lambadaPos}
+	\includegraphics[scale=0.53]{lambadaPos}
 	\captionof{figure}{Target words' PoS distribution (PN=proper noun, CN=common noun, V=verb, ADJ=adjective, ADV=adverb, O=other).}
 	\label{fig:lambadaPos}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
-	\includegraphics[scale=0.55]{lambadaPosAndContext}
-	\captionof{figure}{LAMBADA target words' PoS distribution.}
+	\includegraphics[scale=0.53]{lambadaPosAndContext}
+	\captionof{figure}{LAMBADA target words' PoS distribution splitted depending on whether it is mentioned in the context.}
 	\label{fig:lambadaPosAndContext}
 \end{figure}
 
-The authors argue that the reason for this bias is the fact that proper nouns are favored by the specific setup. Namely, in many cases the context clearly demands a referential expression and the constraint of predicting a single word excludes other possibilities such as noun phrases with articles. This hypothesis seems to be confirmed by \autoref{fig:lambadaPosAndContext}, which shows the PoS distribution for LAMBADA split depending on whether the target word appears in the context. It can be seen that explicit mention in the preceding discourse context is critical for proper nouns (when the target word doesn't previously appear in the passage, none of them are proper nouns), while the other categories can often be guessed without having been explicitly introduced.
+The authors argue that the reason for this bias is the fact that proper nouns are favored by the specific setup. Namely, in many cases the context clearly demands a referential expression and the constraint of predicting a single word excludes other possibilities such as noun phrases with articles. This hypothesis seems to be confirmed by \autoref{fig:lambadaPosAndContext}, which shows the PoS distribution for LAMBADA split depending on whether the target word appears in the context. It can be seen that explicit mention in the preceding discourse context is critical for proper nouns (when the target word does not previously appear in the passage, none of them are proper nouns), while the other categories can often be guessed without having been explicitly introduced.
 
-To sum up, we can conclude that LAMBADA does indeed put to the test language models' capabilities to exploit \textbf{long-range dependencies}. Besides, it is also important to note the bias towards proper nouns present in the dataset. Proper nouns are used to refer to unique entities (e.g. the name of a specific character in a book) and due to their very nature, they are \textbf{rare words} (when compared to the rest of the training corpus). We will describe this phenomena in detail in the next section.
+To sum up, we can conclude that LAMBADA does indeed put to the test language models' capabilities to exploit \textbf{long-range dependencies}. Besides, it is also important to note the bias towards proper nouns present in the dataset. Proper nouns are used to refer to unique entities (e.g. the name of a specific character in a book) and due to their nature, they are \textbf{rare words} (when compared to the rest of the training corpus). We will describe this phenomena in detail in the next section.
 
 \section{The Rare Word Problem}
 \label{sec:problemRare}
 
 As we saw in \autoref{chapter:nlm}, a common approach followed by recent neural language models is to use a softmax output layer where each of the dimensions corresponds to a word in a predefined vocabulary.
 
-This approach has a fundamental problem, known as the \textit{rare word problem}. It is caused by some of the words in the vocabulary occurring much less frequently in the training set and thus, difficulting the learning of good representations for them and resulting in poor generalization performance. 
+This approach has a fundamental problem, known as the \textit{rare word problem} \cite{merity2016pointer}. It is caused by some of the words in the vocabulary occurring much less frequently in the training set and thus, making the process of learning a good representation for them difficult. This in turn leads to poor generalization performance. 
 
 \begin{figure}[H]
 	\centering
@@ -98,13 +97,13 @@ This approach has a fundamental problem, known as the \textit{rare word problem}
 		\caption{Only names}
 		\label{fig:perplexity_names}
 	\end{subfigure}
-	\caption{Perplexity traces on LAMBADA (training trace is in orange and development, in blue).}
+	\caption{Perplexity traces on LAMBADA for a vanilla LSTM (training trace is in orange and development, in blue).}
 	\label{fig:perplexityRare}
 \end{figure}
 
 \autoref{fig:perplexityRare} illustrates a real example of this problem. \autoref{fig:perplexity_all} shows traces of average word perplexity over training batches and the development set for a vanilla LSTM language model trained on the LAMBADA training partition (more details in \autoref{chapter:experiments}). If we now focus on just rare words (in this specific example, character names), we can see in \autoref{fig:perplexity_names} that the model is clearly overfitting on this subset of words. Intrinsically, rare words constitute a small fraction of the corpus and hence, their effect is averaged out when taking into account all words.
 
-These results suggest that in general existing neural language models remain fundamentally lacking, failing to handle rare words.
+These results suggest that in general existing neural language models have the fundamental problem of failing to handle rare words. Despite the limited effect on the overall perplexity, the rare word problem is a significant issue for language models. Rare words are of primary interest in many applications that rely on knowledge-extraction, such as question-answering or reading comprehension.
 
 \section{RNN Regularization}
 \label{sec:rnnRegularization}
@@ -119,7 +118,7 @@ Dropout is an extremely effective and simple regularization technique introduced
 
 At test time, it is not feasible to explicitly average the predictions from exponentially many models. However, a very simple approximate averaging method is then used: no dropout is applied while testing and all weights are scaled by $p$ (same probability as used during training). This has the goal of ensuring that for any unit, the expected output (under the dropout distribution used in training time) is the same as the actual output at test time. Given a unit's output $y$, its expected value is $\mathbb{E}[y]=py+(1-p)0=py$.
 
-In practice, we employ a variant known as \textbf{``inverted dropout''} where kept units are also scaled by $1/p$. This has the very appealing property of not requiring any additional operations during test time.
+In practice, we employ a variant known as \textbf{``inverted dropout''} where the units that are kept are also scaled by $1/p$. This has the very appealing property of not requiring any additional operations during test time.
 
 One of the first successful attempts at applying dropout for regularizing RNNs was described in \cite{zaremba2014recurrent}. The authors claim that dropout should only be applied to non-recurrent connections (namely, input and output units) by sampling a different dropout mask at each time step. Therefore it is ensured that information is only corrupted $L+1$ times (being $L$ the number of layers of the RNN), as exemplified in \autoref{fig:flowDropout}. In this way, the method can benefit from dropout regularization without sacrificing the valuable memorization ability of RNNs.
 
@@ -201,7 +200,7 @@ First we can see in \autoref{eq:approxPost} that sampling from $q(W)$ is identic
 		\caption{Variational}
 		\label{fig:varDropout}
 	\end{subfigure}
-	\caption{Comparison of dropout techniques (only applied at connections denoted with a solid arrow, with different colors meaning different masks) \cite{gal2016theoretically}.}
+	\caption{Comparison of dropout techniques (only applied at connections denoted with a solid arrow, with different colors representing different masks) \cite{gal2016theoretically}.}
 	\label{fig:compareDropout}
 \end{figure}
 
@@ -223,4 +222,4 @@ It as argued by the authors that compared with dropout, zoneout is appealing bec
 
 \subsection{Weight Dropout}
 
-The recent work described in \cite{merity2017regularizing} opts for applying DropConnect \cite{wan2013regularization} on the recurrent connections of a recurrent cell. For an LSTM, it is implemented by applying on the recurrent weight matrices ($U_f,U_i,U_o,U_f$ from \autoref{eq:lstmcell}) a Bernoulli mask  sampled before each forward-backward pass. It is similar to variational dropout in the sense that the same mask is reused over multiple time steps. However by working directly on the weight matrices, ``weight dropout'' doesn't need to modify the formulation of the cell and is amenable to be used with highly optimized black box implementations.
+The recent work described in \cite{merity2017regularizing} opts for applying DropConnect \cite{wan2013regularization} on the recurrent connections of a recurrent cell. For an LSTM, it is implemented by applying on the recurrent weight matrices ($U_f,U_i,U_o,U_f$ from \autoref{eq:lstmcell}) a Bernoulli mask  sampled before each forward-backward pass. It is similar to variational dropout in the sense that the same mask is reused over multiple time steps. However, by working directly on the weight matrices, ``weight dropout'' doesn't need to modify the formulation of the cell and is amenable to be used with highly optimized black box implementations.

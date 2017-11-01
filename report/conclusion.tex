@@ -1,10 +1,19 @@
 \chapter{Conclusion}
 
-\section{Achieved Results}
-\label{sec:achieved}
+In this thesis, we investigated the LAMBADA dataset and the source of its difficulty. Based on our findings, we concluded that apart from its intended goal of testing the abilities of language models at handling long-range dependencies, the rare word problem also plays an important role in making it a very challenging dataset.
+
+We also proposed a novel method, the Softmax Mixture model, a language model that parametrizes the output distribution of the predicted word with two different softmax layers that are dynamically blended depending on the previous context. The experiments showed that our approach failed to improve on vanilla RNNLMs, mainly due to the poor performance of the switching component. However, further investigation indicated that under certain circumstances, our technique might be able to encode a differentiated output distribution for rare words.
+
+Lastly, we evaluated the Pointer Sentinel Mixture model on LAMBADA against the state-of-the-art Neural Continuous Cache and showed that it achieves comparable perplexity results. However, by introducing the calculation of the gate $g_t$, the PSMM can automatically learn when to use each of its two components and at the same time, allow for a more intuitive exploration of the results as demonstrated by our qualitative investigation.
 
 \section{Future Work}
 \label{sec:futureWork}
 
-Extend neural language models to handle OOV words ?
+There are several possibilities to extend this work that we consider worth exploring.
+
+As we have already discussed, the results obtained for the Softmax Mixture model are heavily limited by its switching component. Therefore one possibility for future work would be to try alternative blending mechanisms and see how they improve the overall performance.
+
+Moreover, due to the orthogonality of the two approaches, we would also be interested to see if the combination of the Softmax Mixture model together with pointer based approaches like the PSMM could lead to further gains in performance.
+
+Finally, evaluating the genuine text understanding of language models remains an open problem. Along the lines of the recent advances in computer vision, we believe that an interesting research direction would be the development of new methodologies to generate suitable adversarial examples for NLP systems.
 

@@ -1,18 +1,48 @@
 \chapter{Introduction}
 
-Here comes the intro... \todo{Finish intro (3 pages)}
+Probabilistic language modeling is the area of Natural Language Processing (NLP) concerned with the development of statistical models capable of assigning probabilities over sequences of words $p(w_1, \ldots ,w_n)$. Such models are of great use in applications like automatic speech recognition, where the uncertainty of choosing among sentences with very similar pronunciation profiles can be reduced by explicitly modeling how likely is each word sequence. Another example are dialogue systems, where discourse understanding is needed to produce valid utterances for a given conversation context. Currently, recurrent neural network based language models hold the state-of-the-art.
 
 \section{Problem Statement and Motivation}
-\label{sec:motivation}
+\label{sec:motivation} 
 
-motivation... \todo{Finish motivation (1 page)}
+Recent works like \cite{paperno2016lambada} and \cite{jia2017adversarial} have highlighted that in spite of the good performances achieved under standard metrics, modern models are far from genuine language understanding. This is mostly due to the fact that current evaluation methodologies fail at probing the actual capabilities of these models. In particular, examples like the LAMBADA dataset, have shown that SOTA language models fail to take the broad discourse context into account when predicting a word.
+
+Moreover, further research efforts like \cite{merity2016pointer} suggest that in general, existing neural language models have the fundamental problem of failing to handle rare words. Despite its limited effect on the overall perplexity, rare word prediction is a significant issue for language models. This problem becomes very important in applications that rely on knowledge-extraction, such as question-answering or reading comprehension, where rare words are of primary interest.
 
 \section{Thesis Contributions}
 \label{sec:contribution}
 
-contributions... \todo{Finish contributions (1 page)}
+The main contributions of this thesis can be summarized as follows:
+
+\begin{itemize}
+
+\item We study the nature of the LAMBADA dataset and the phenomena that contribute to its difficulty. We also perform an extensive analysis of its main characteristics and use those findings to motivate the subsequently proposed approaches. 
+
+\item We present our model, the Softmax Mixture, which attempts to separately model the output distribution of rare words by introducing an additional softmax layer. By dynamically calculating the weight of the two distributions, our objective is that the model learns which one to use depending on the history of previous words.
+
+\item We test the behavior of the Softmax Mixture under multiple configurations and analyze the impact of the switching component in the overall performance of the model.
+
+\item We apply a variant of a pointer based language model to the LAMBADA task and perform a quantitative and qualitative analysis of the results.
+
+\end{itemize}
 
 \section{Thesis Outline}
 \label{sec:outline}
 
-outline... \todo{Finish outline (1 page)}
+The remainder of this thesis is organized in the following way:
+
+\begin{itemize}
+
+\item In Chapter 2 we give an overview of the related work, mainly focusing on recurrent neural network language models and recently proposed extensions.
+
+\item Chapter 3 starts by introducing the basics of language modeling. We then review the development of neural language models and their main weaknesses, detailing how they have been addressed in the literature.
+
+\item The LAMBADA dataset is presented in Chapter 4 together with a detailed analysis of its main characteristics. We proceed to discuss the rare word problem and how it applies to LAMBADA and conclude with the examination of several RNN regularization techniques.
+
+\item Chapter 5 compares several recently proposed architectures designed to extend vanilla RNNLMs and tackle the rare word prediction problem. We also introduce our proposed model called the ``Softmax Mixture''.
+
+\item The experiments carried out in this thesis are detailed in Chapter 6. We first discuss the behavior shown by different configurations of the Softmax Mixture model and then we further analyze the cause for the obtained performance. Additionally, we apply to Pointer Sentinel Mixture model to the LAMBADA task and comment on the results.
+
+\item Finally we present our conclusions and discuss prospective future work directions in Chapter 7.
+
+\end{itemize}
